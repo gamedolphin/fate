@@ -1,8 +1,9 @@
 #include <iostream>
 #include "fate/core.h"
+#include "fate/log.h"
 
 int main(int argc, char** argv) {
-  Fate::Game game;
-  game.HelloWorld();
+
+  Fate::LogMessage("HELLO WORLD");
   return 0;
 }
