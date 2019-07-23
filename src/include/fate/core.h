@@ -1,9 +1,15 @@
 #pragma once
+#include "window.h"
+#include "gamestate.h"
+#include "input.h"
 
 namespace Fate {
 
   class Game {
   public:
-    void HelloWorld();
+    WindowManager window;
+    InputManager input;
+    Game();
+    void Run(GameState& state);
   };
 };
