@@ -9,9 +9,11 @@ namespace Fate {
   }
 
   void Game::Run(GameState& state) {
-    window.CreateWindow(state.windowState);
 
     state.isRunning = true;
+
+    window.CreateWindow(state.windowState);
+    renderer.InitializeRenderer(state.windowState, state.renderState);
 
     while(state.isRunning) {
       state.inputState = input.ReadInput(state.inputState);
@@ -19,5 +21,8 @@ namespace Fate {
         state.isRunning = false;
       }
     }
+
+
+    window.ShutdownWindow(state.windowState);
   }
 };

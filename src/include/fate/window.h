@@ -1,16 +1,20 @@
 #pragma once
 
-typedef struct SDL_Window WindowHandle;
+struct SDL_Window;
 
 namespace Fate {
 
   struct WindowState {
+    SDL_Window* windowHandle;
   };
 
   class WindowManager {
   public:
-    WindowHandle* window;
-    void CreateWindow(WindowState& windowState);
+    void CreateWindow(WindowState& state);
+    void ShutdownWindow(WindowState& state);
     ~WindowManager();
   };
+
+  void* GetDisplayType(WindowState& windowState);
+  void* GetWindowHandle(WindowState& windowState);
 }

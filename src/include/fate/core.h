@@ -2,6 +2,7 @@
 #include "window.h"
 #include "gamestate.h"
 #include "input.h"
+#include "renderer.h"
 
 namespace Fate {
 
@@ -9,6 +10,7 @@ namespace Fate {
   public:
     WindowManager window;
     InputManager input;
+    Renderer renderer;
     Game();
     void Run(GameState& state);
   };
