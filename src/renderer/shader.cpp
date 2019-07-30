@@ -19,13 +19,17 @@ namespace Fate {
     std::string content( (std::istreambuf_iterator<char>(ifs) ),
                          (std::istreambuf_iterator<char>()    ) );
 
+    if(ifs.is_open()) {
+      LogMessage(content);
+    }
+
     const bgfx::Memory* mem = bgfx::copy(content.c_str(),content.length() + 1);
     mem->data[mem->size-1] = '\0';
     bgfx::ShaderHandle handle = bgfx::createShader(mem);
     return handle;
   }
 
-  uint8_t ShaderManager::LoadProgram(const std::string &vertexPath, const std::string &fragmentPath) {
+  uint8_t ShaderManager::LoadProgram(const std::string &vertexPath, const std::string &fragmentPath, uint8_t key) {
 
     auto concatPath = vertexPath + fragmentPath;
 
@@ -38,14 +42,16 @@ namespace Fate {
     auto vertexHandle = GetShader(vertexPath);
     auto fragmentHandle = GetShader(fragmentPath);
 
-    keyVal = keyVal + 1;
-
     auto program = std::make_shared<Program>();
     program->concatPath = concatPath;
     program->programHandle = bgfx::createProgram(vertexHandle, fragmentHandle, true);
 
-    programs.insert(std::make_pair(keyVal, std::move(program)));
+    programs.insert(std::make_pair(key, std::move(program)));
 
-    return keyVal;
+    return key;
   };
+
+  void ShaderManager::UseProgram(uint8_t id) {
+    bgfx::submit(0,programs.at(id)->programHandle);
+  }
 }

@@ -37,6 +37,7 @@ namespace Fate {
     int uKey = 0;
   public:
     int AddScene(GameState& gameState, SceneConfig config);
+    int AddScene(GameState& gameState, SceneConfig config, int sceneId);
     void SetScene(GameState& gameState, int sceneId);
     void Update(GameState& gameState);
   };

@@ -19,6 +19,7 @@ namespace Fate {
       state.inputState = input.ReadInput(state.inputState);
       if(state.inputState.eventType == EventType::QUIT) {
         state.isRunning = false;
+        break;
       }
       sceneManager.Update(state);
       renderer.Render(state.windowState, state.renderState);
@@ -26,5 +27,9 @@ namespace Fate {
 
     renderer.ShutdownRenderer(state.windowState, state.renderState);
     window.ShutdownWindow(state.windowState);
+  }
+
+  void Game::StopGame(GameState &state) {
+    state.isRunning = false;
   }
 };

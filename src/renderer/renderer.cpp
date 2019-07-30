@@ -5,8 +5,62 @@
 #include <bgfx/bgfx.h>
 #include <bgfx/platform.h>
 #include <bx/math.h>
+#include <fstream>
 
 namespace Fate {
+
+  struct PosTexcoordVertex
+  {
+    float m_x;
+    float m_y;
+    float m_u;
+    float m_v;
+
+    static void init()
+    {
+      ms_decl
+        .begin()
+        .add(bgfx::Attrib::Position,  2, bgfx::AttribType::Float)
+        .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float, true, true)
+        .end();
+    }
+
+    static bgfx::VertexDecl ms_decl;
+  };
+
+  bgfx::VertexDecl PosTexcoordVertex::ms_decl;
+  bgfx::VertexBufferHandle m_vbh;
+  bgfx::IndexBufferHandle m_ibh;
+  bgfx::UniformHandle s_texColor;
+  bgfx::TextureHandle m_textureColor;
+
+  static PosTexcoordVertex s_cubeVertices[] =
+    {
+     {0.0f, 0.0f, 0, 0 },
+     {0.0f, 1.0f, 0, 1 },
+     {1.0f, 1.0f, 1, 1 },
+     {1.0f, 0.0f, 1, 0 }
+    };
+
+  static const uint16_t s_cubeIndices[] =
+    {
+     0, 1, 2,
+     2, 3, 0
+    };
+
+  bgfx::TextureHandle loadTexture(std::string fileName) {
+    std::ifstream ifs(fileName);
+    std::string content( (std::istreambuf_iterator<char>(ifs) ),
+                         (std::istreambuf_iterator<char>()    ) );
+
+    if(ifs.is_open()) {
+      LogMessage(content);
+    }
+
+    const bgfx::Memory* mem = bgfx::copy(content.c_str(),content.length() + 1);
+
+    return bgfx::createTexture2D(20,20,false,1,bgfx::TextureFormat::RGBA8,0,mem);
+  };
 
   void Renderer::InitializeRenderer(WindowState &windowState, RenderState &renderState) {
     LogMessage("Initializing renderer...");
@@ -25,7 +79,10 @@ namespace Fate {
     bgfx::renderFrame();
     bgfx::init(init);
 
-    shaderManager.LoadProgram("shaders/cubes.vshader.bin", "shaders/cubes.fshader.bin");
+    auto shaderKey = shaderManager.LoadProgram("shaders/cubes.vshader.bin", "shaders/cubes.fshader.bin", 0);
+    shaderManager.LoadProgram("shaders/sprite.vshader.bin", "shaders/sprite.fshader.bin", 1);
+
+    PosTexcoordVertex::init();
 
     bgfx::reset(windowState.width, windowState.height, BGFX_RESET_VSYNC);
      // Enable debug text.
@@ -41,6 +98,19 @@ namespace Fate {
                        0x443355FF, 1.0f, 0);
 
     bgfx::touch(0);
+
+    // Create static vertex buffer.
+    m_vbh = bgfx::createVertexBuffer
+      (
+       bgfx::makeRef(s_cubeVertices, sizeof(s_cubeVertices) ),
+       PosTexcoordVertex::ms_decl
+       );
+
+    m_ibh = bgfx::createIndexBuffer(bgfx::makeRef(s_cubeIndices, sizeof(s_cubeIndices) ) );
+
+    s_texColor  = bgfx::createUniform("s_texColor",  bgfx::UniformType::Sampler);
+
+    m_textureColor = loadTexture("textures/box.png");
   }
 
   void Renderer::Render(WindowState& windowState, RenderState &renderState) {
@@ -67,12 +137,23 @@ namespace Fate {
 
     bgfx::touch(0);
 
+    bgfx::setVertexBuffer(0, m_vbh);
+    bgfx::setIndexBuffer(m_ibh);
+    bgfx::setTexture(0, s_texColor,  m_textureColor);
+
+    bgfx::setState(BGFX_STATE_DEFAULT);
+
+    shaderManager.UseProgram(1);
 
     bgfx::frame();
   }
 
   void Renderer::ShutdownRenderer(WindowState &windowState, RenderState &renderState) {
     LogMessage("Shutting down renderer");
+    bgfx::destroy(m_ibh);
+    bgfx::destroy(m_vbh);
+    bgfx::destroy(m_textureColor);
+    bgfx::destroy(s_texColor);
     bgfx::shutdown();
   }
 

@@ -15,5 +15,6 @@ namespace Fate {
     SceneManager sceneManager;
     Game();
     void Run(GameState& state);
+    void StopGame(GameState& state);
   };
 };
