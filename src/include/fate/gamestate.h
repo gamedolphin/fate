@@ -2,6 +2,7 @@
 #include "window.h"
 #include "renderer.h"
 #include "input.h"
+#include "scene.h"
 
 namespace Fate {
 
@@ -10,5 +11,6 @@ namespace Fate {
     WindowState windowState;
     InputState inputState;
     RenderState renderState;
+    SceneState sceneState;
   };
 }

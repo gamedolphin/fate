@@ -3,6 +3,7 @@
 #include "gamestate.h"
 #include "input.h"
 #include "renderer.h"
+#include "scene.h"
 
 namespace Fate {
 
@@ -11,6 +12,7 @@ namespace Fate {
     WindowManager window;
     InputManager input;
     Renderer renderer;
+    SceneManager sceneManager;
     Game();
     void Run(GameState& state);
   };

@@ -20,9 +20,11 @@ namespace Fate {
       if(state.inputState.eventType == EventType::QUIT) {
         state.isRunning = false;
       }
+      sceneManager.Update(state);
+      renderer.Render(state.windowState, state.renderState);
     }
 
-
+    renderer.ShutdownRenderer(state.windowState, state.renderState);
     window.ShutdownWindow(state.windowState);
   }
 };

@@ -1,25 +1,16 @@
 #pragma once
 #include <string>
 #include <memory>
-
-namespace bgfx {
-  struct ShaderHandle;
-  struct ProgramHandle;
-}
+#include <unordered_map>
 
 namespace Fate {
-  class Shader {
-    std::unique_ptr<bgfx::ShaderHandle> vertexHandle;
-    std::unique_ptr<bgfx::ShaderHandle> fragmentHandle;
+
+  class  Program;
+
+  class ShaderManager {
+    uint8_t keyVal = 0;
   public:
-    uint8_t ID;
-
-    Shader();
-    /* Shader &Use(); */
-    void Compile(const std::string &vertexSource, const std::string *fragmentSource);
-  };
-
-  class Program {
-    std::unique_ptr<bgfx::ProgramHandle> programHandle;
+    std::unordered_map<uint8_t,std::shared_ptr<Program>> programs = {};
+    uint8_t LoadProgram(const std::string &vertexPath, const std::string &fragmentPath);
   };
 }

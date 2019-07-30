@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 struct SDL_Window;
 
@@ -6,6 +7,8 @@ namespace Fate {
 
   struct WindowState {
     SDL_Window* windowHandle;
+    int width, height;
+    std::string windowTitle;
   };
 
   class WindowManager {

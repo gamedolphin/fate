@@ -23,7 +23,7 @@ foreach(SHADER ${FRAGMENT_SHADERS})
 endforeach(SHADER)
 
 foreach(SHADER ${VERTEX_SHADERS})
-  get_filename_component(FILE_NAME ${SHADER} NAME_WE)
+  get_filename_component(FILE_NAME ${SHADER} NAME)
   set(VERT "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}.bin")
   add_custom_command(
     OUTPUT ${VERT}

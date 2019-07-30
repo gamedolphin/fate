@@ -1,5 +1,4 @@
 #include "fate/window.h"
-#include "fate/gamestate.h"
 #include "fate/log.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
@@ -13,7 +12,7 @@ namespace Fate {
       LogMessage( "SDL could not initialize!");
     }
     else {
-      state.windowHandle = SDL_CreateWindow("Test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 300, 200, 0);
+      state.windowHandle = SDL_CreateWindow(state.windowTitle.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.width, state.height, 0);
       if( state.windowHandle == nullptr ) {
         LogMessage( "Window could not be created!");
       }
