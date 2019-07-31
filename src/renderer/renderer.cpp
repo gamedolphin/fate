@@ -39,10 +39,10 @@ namespace Fate {
 
   static PosTexcoordVertex s_cubeVertices[] =
     {
-     {0.0f, 0.0f, 0, 0 },
-     {0.0f, 1.0f, 0, 1 },
-     {1.0f, 1.0f, 1, 1 },
-     {1.0f, 0.0f, 1, 0 }
+     {-0.5f, -0.5f, 1, 1 },
+     {-0.5f, 0.5f, 1, 0 },
+     {0.5f, 0.5f, 0, 0 },
+     {0.5f, -0.5f, 0, 1 }
     };
 
   static const uint16_t s_cubeIndices[] =
@@ -64,8 +64,8 @@ namespace Fate {
     std::string content( (std::istreambuf_iterator<char>(ifs) ),
                          (std::istreambuf_iterator<char>()) );
 
-    if(ifs.is_open()) {
-      LogMessage(content);
+    if(!ifs.is_open()) {
+      LogMessage("Could not open texture. Probably crashing");
     }
 
     bimg::ImageContainer* imageContainer = bimg::imageParse(&s_allocator, (void*)content.c_str(), (uint32_t)content.length());
@@ -99,13 +99,13 @@ namespace Fate {
     init.vendorId = BGFX_PCI_ID_NONE;
     init.deviceId = 0;
     init.platformData = pd;
-    init.resolution.width  = 300;
-    init.resolution.height = 200;
+    init.resolution.width  = windowState.width;
+    init.resolution.height = windowState.height;
 
     bgfx::renderFrame();
     bgfx::init(init);
 
-    auto shaderKey = shaderManager.LoadProgram("shaders/cubes.vshader.bin", "shaders/cubes.fshader.bin", 0);
+    shaderManager.LoadProgram("shaders/cubes.vshader.bin", "shaders/cubes.fshader.bin", 0);
     shaderManager.LoadProgram("shaders/sprite.vshader.bin", "shaders/sprite.fshader.bin", 1);
 
     PosTexcoordVertex::init();
@@ -136,12 +136,12 @@ namespace Fate {
 
     s_texColor  = bgfx::createUniform("s_texColor",  bgfx::UniformType::Sampler);
 
-    m_textureColor = loadTexture("textures/box.png");
+    m_textureColor = loadTexture("textures/FATE.png");
   }
 
   void Renderer::Render(WindowState& windowState, RenderState &renderState) {
     const bx::Vec3 at  = { 0.0f, 0.0f,   0.0f };
-    const bx::Vec3 eye = { 0.0f, 0.0f, 10.0f };
+    const bx::Vec3 eye = { 0.0f, 0.0f, 1.0f };
 
     // Set view and projection matrix for view 0.
     float view[16];
@@ -162,6 +162,17 @@ namespace Fate {
                       windowState.height);
 
     bgfx::touch(0);
+
+    float mtx[16];
+    bx::mtxRotateY(mtx, 0.0f);
+
+    // position x,y,z
+    mtx[12] = 0.0f;
+    mtx[13] = 0.0f;
+    mtx[14] = 0.0f;
+
+    // Set model matrix for rendering.
+    bgfx::setTransform(mtx);
 
     bgfx::setVertexBuffer(0, m_vbh);
     bgfx::setIndexBuffer(m_ibh);

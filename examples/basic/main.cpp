@@ -9,9 +9,9 @@ int main(int argc, char** argv) {
 
   GameState gameState;
   gameState.windowState = {
-                           .windowTitle = "Hello",
-                           .width = 400,
-                           .height = 300
+                           .windowTitle = "Sprite Test",
+                           .width = 800,
+                           .height = 600
   };
   Game game;
 

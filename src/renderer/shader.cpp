@@ -19,8 +19,8 @@ namespace Fate {
     std::string content( (std::istreambuf_iterator<char>(ifs) ),
                          (std::istreambuf_iterator<char>()    ) );
 
-    if(ifs.is_open()) {
-      LogMessage(content);
+    if(!ifs.is_open()) {
+      LogMessage("Could not load shader. Probably crashing");
     }
 
     const bgfx::Memory* mem = bgfx::copy(content.c_str(),content.length() + 1);
