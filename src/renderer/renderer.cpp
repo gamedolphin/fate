@@ -5,7 +5,9 @@
 #include <bgfx/bgfx.h>
 #include <bgfx/platform.h>
 #include <bx/math.h>
+#include <bx/allocator.h>
 #include <fstream>
+#include <bimg/decode.h>
 
 namespace Fate {
 
@@ -33,6 +35,7 @@ namespace Fate {
   bgfx::IndexBufferHandle m_ibh;
   bgfx::UniformHandle s_texColor;
   bgfx::TextureHandle m_textureColor;
+  bx::DefaultAllocator s_allocator;
 
   static PosTexcoordVertex s_cubeVertices[] =
     {
@@ -48,18 +51,41 @@ namespace Fate {
      2, 3, 0
     };
 
+  static void imageReleaseCb(void* _ptr, void* _userData)
+  {
+    BX_UNUSED(_ptr);
+    bimg::ImageContainer* imageContainer = (bimg::ImageContainer*)_userData;
+    bimg::imageFree(imageContainer);
+  }
+
+
   bgfx::TextureHandle loadTexture(std::string fileName) {
     std::ifstream ifs(fileName);
     std::string content( (std::istreambuf_iterator<char>(ifs) ),
-                         (std::istreambuf_iterator<char>()    ) );
+                         (std::istreambuf_iterator<char>()) );
 
     if(ifs.is_open()) {
       LogMessage(content);
     }
 
-    const bgfx::Memory* mem = bgfx::copy(content.c_str(),content.length() + 1);
+    bimg::ImageContainer* imageContainer = bimg::imageParse(&s_allocator, (void*)content.c_str(), (uint32_t)content.length());
 
-    return bgfx::createTexture2D(20,20,false,1,bgfx::TextureFormat::RGBA8,0,mem);
+    const bgfx::Memory* mem = bgfx::makeRef(
+                      imageContainer->m_data
+                    , imageContainer->m_size
+                    , imageReleaseCb
+                    , imageContainer
+                    );
+
+    return bgfx::createTexture2D(
+                      uint16_t(imageContainer->m_width)
+                    , uint16_t(imageContainer->m_height)
+                    , 1 < imageContainer->m_numMips
+                    , imageContainer->m_numLayers
+                    , bgfx::TextureFormat::Enum(imageContainer->m_format)
+                    , 0
+                    , mem
+                    );
   };
 
   void Renderer::InitializeRenderer(WindowState &windowState, RenderState &renderState) {

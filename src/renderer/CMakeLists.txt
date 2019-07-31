@@ -12,7 +12,12 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../libs/bgfx/.build/linux64_gcc/bin/l
 set_target_properties(bgfx
   PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/libbgfx-shared-libRelease.so)
 
+add_library(bimg STATIC IMPORTED GLOBAL)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../libs/bgfx/.build/linux64_gcc/bin/libbimg_decodeRelease.a ${CMAKE_CURRENT_BINARY_DIR}/libbimg_decodeRelease.a COPYONLY)
+set_target_properties(bimg
+  PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/libbimg_decodeRelease.a)
+
 add_library(renderer SHARED ../include/fate/renderer.h renderer.cpp ../include/fate/shader.h shader.cpp)
 target_include_directories(renderer PUBLIC ../include)
-target_include_directories(renderer PRIVATE ../libs/bgfx/include ../libs/bx/include ../libs/bx/include)
-target_link_libraries(renderer PRIVATE window bgfx GL X11)
+target_include_directories(renderer PRIVATE ../libs/bgfx/include ../libs/bx/include ../libs/bimg/include)
+target_link_libraries(renderer PRIVATE window bgfx GL X11 bimg)
