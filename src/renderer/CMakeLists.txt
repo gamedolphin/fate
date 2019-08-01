@@ -5,6 +5,10 @@ if(NOT TARGET window)
   add_subdirectory(../window "${CMAKE_BINARY_DIR}/src/window")
 endif()
 
+if(NOT TARGET entity)
+  add_subdirectory(../entity "${CMAKE_BINARY_DIR}/src/entity")
+endif()
+
 # find_package(SDL2 REQUIRED)
 
 add_library(bgfx SHARED IMPORTED GLOBAL)
@@ -20,4 +24,4 @@ set_target_properties(bimg
 add_library(renderer SHARED ../include/fate/renderer.h renderer.cpp ../include/fate/shader.h shader.cpp)
 target_include_directories(renderer PUBLIC ../include)
 target_include_directories(renderer PRIVATE ../libs/bgfx/include ../libs/bx/include ../libs/bimg/include)
-target_link_libraries(renderer PRIVATE window bgfx GL X11 bimg)
+target_link_libraries(renderer PRIVATE window bgfx GL X11 bimg entity)

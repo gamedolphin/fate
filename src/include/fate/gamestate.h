@@ -3,6 +3,7 @@
 #include "renderer.h"
 #include "input.h"
 #include "scene.h"
+#include "entity.h"
 
 namespace Fate {
 
@@ -12,5 +13,6 @@ namespace Fate {
     InputState inputState;
     RenderState renderState;
     SceneState sceneState;
+    EntityState entityState;
   };
 }

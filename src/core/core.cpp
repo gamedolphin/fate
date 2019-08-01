@@ -13,7 +13,7 @@ namespace Fate {
     state.isRunning = true;
 
     window.CreateWindow(state.windowState);
-    renderer.InitializeRenderer(state.windowState, state.renderState);
+    renderer.InitializeRenderer(state.windowState, state.renderState, state.entityState);
 
     while(state.isRunning) {
       state.inputState = input.ReadInput(state.inputState);
@@ -22,7 +22,7 @@ namespace Fate {
         break;
       }
       sceneManager.Update(state);
-      renderer.Render(state.windowState, state.renderState);
+      renderer.Render(state.windowState, state.renderState, state.entityState);
     }
 
     renderer.ShutdownRenderer(state.windowState, state.renderState);
