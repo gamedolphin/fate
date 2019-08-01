@@ -13,3 +13,6 @@
 [submodule "src/libs/entt"]
 	path = src/libs/entt
 	url = git@github.com:skypjack/entt.git
+[submodule "src/libs/bgfx.cmake"]
+	path = src/libs/bgfx.cmake
+	url = https://github.com/JoshuaBrookover/bgfx.cmake.git

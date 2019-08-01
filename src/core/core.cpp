@@ -8,13 +8,13 @@ namespace Fate {
 
   }
 
-  void Game::Run(GameState& state) {
-
-    state.isRunning = true;
-
+  void Game::Initialize(GameState &state) {
     window.CreateWindow(state.windowState);
-    renderer.InitializeRenderer(state.windowState, state.renderState, state.entityState);
+    renderer.InitializeRenderer(this, state.windowState, state.renderState, state.entityState);
+  }
 
+  void Game::Run(GameState& state) {
+    state.isRunning = true;
     while(state.isRunning) {
       state.inputState = input.ReadInput(state.inputState);
       if(state.inputState.eventType == EventType::QUIT) {

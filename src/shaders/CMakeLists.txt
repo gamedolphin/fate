@@ -7,8 +7,8 @@ file(GLOB_RECURSE VERTEX_SHADERS
   "*.vshader"
   )
 
-set(BGFX_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/../libs/bgfx/src)
-set(SHADERC "${CMAKE_CURRENT_SOURCE_DIR}/../libs/bgfx/.build/linux64_gcc/bin/shadercRelease")
+set(BGFX_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/../libs/bgfx.cmake/bgfx/src)
+set(SHADERC "${CMAKE_SOURCE_DIR}/tools/linux/shaderc")
 
 foreach(SHADER ${FRAGMENT_SHADERS})
   get_filename_component(FILE_NAME ${SHADER} NAME)
@@ -37,5 +37,5 @@ endforeach(SHADER)
 
 add_custom_target(
     Shaders
-    DEPENDS ${SHADER_BINARY_FILES}
+    DEPENDS ${SHADER_BINARY_FILES} shaderc
     )

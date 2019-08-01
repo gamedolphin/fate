@@ -118,10 +118,27 @@ namespace Fate {
     component.viewPort = { 0, 0, 1, 1 };
   }
 
-  void Renderer::InitializeRenderer(WindowState &windowState,
+  entt::entity& Renderer::MakeSprite(entt::entity& sprite,
+                                     entt::registry& registry,
+                                     std::string textureName, RenderSize size) {
+    auto &transform = registry.assign<Transform>(sprite);
+    auto &render = registry.assign<Sprite>(sprite);
+    render.size = size;
+    render.textureId = textureName;
+    render.indexBufferId = 0;
+    render.vertexBufferId = 0;
+    render.type = RenderType::SPRITE;
+
+    return sprite;
+  }
+
+  void Renderer::InitializeRenderer(Game *_game,
+                                    WindowState &windowState,
                                     RenderState &renderState,
                                     EntityState &entityState) {
     LogMessage("Initializing renderer...");
+
+    game = _game;
 
     bgfx::PlatformData pd;
     pd.ndt = GetDisplayType(windowState);
@@ -215,16 +232,31 @@ namespace Fate {
                           cameraRect.height * windowState.height);
 
         bgfx::touch(cameraInfo.viewId);
+
+        auto renderables = entityState.registry.view<Transform,RenderComponent>();
+        for(auto renderable : renderables) {
+          auto &render = renderables.get<RenderComponent>(renderable);
+          auto &transform = renderables.get<Transform>(renderable);
+
+          // float mtx[16];
+          // SetMatrix(transform, mtx);
+
+          // bgfx::setTransform(mtx);
+          // bgfx::setVertexBuffer(cameraInfo.viewId, m_vbh);
+          // bgfx::setIndexBuffer(m_ibh);
+          // bgfx::setTexture(cameraInfo.viewId, s_texColor,  m_textureColor);
+          // bgfx::setState(BGFX_STATE_DEFAULT);
+
+          // shaderManager.UseProgram(1);
+        }
     }
 
     float mtx[16];
     bx::mtxRotateY(mtx, 0.0f);
 
-    // position x,y,z
     mtx[12] = 0.0f;
     mtx[13] = 0.0f;
     mtx[14] = 0.0f;
-
     // Set model matrix for rendering.
     bgfx::setTransform(mtx);
 
