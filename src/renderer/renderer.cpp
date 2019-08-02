@@ -17,83 +17,6 @@
 
 namespace Fate {
 
-  struct PosTexcoordVertex
-  {
-    float m_x;
-    float m_y;
-    float m_u;
-    float m_v;
-
-    static void init()
-    {
-      ms_decl
-        .begin()
-        .add(bgfx::Attrib::Position,  2, bgfx::AttribType::Float)
-        .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float, true, true)
-        .end();
-    }
-
-    static bgfx::VertexDecl ms_decl;
-  };
-
-  bgfx::VertexDecl PosTexcoordVertex::ms_decl;
-  bgfx::VertexBufferHandle m_vbh;
-  bgfx::IndexBufferHandle m_ibh;
-  bgfx::UniformHandle s_texColor;
-  bgfx::TextureHandle m_textureColor;
-  bx::DefaultAllocator s_allocator;
-
-  static PosTexcoordVertex s_cubeVertices[] =
-    {
-     {-0.5f, -0.5f, 1, 1 },
-     {-0.5f, 0.5f, 1, 0 },
-     {0.5f, 0.5f, 0, 0 },
-     {0.5f, -0.5f, 0, 1 }
-    };
-
-  static const uint16_t s_cubeIndices[] =
-    {
-     0, 1, 2,
-     2, 3, 0
-    };
-
-  static void imageReleaseCb(void* _ptr, void* _userData)
-  {
-    BX_UNUSED(_ptr);
-    bimg::ImageContainer* imageContainer = (bimg::ImageContainer*)_userData;
-    bimg::imageFree(imageContainer);
-  }
-
-
-  bgfx::TextureHandle loadTexture(std::string fileName) {
-    std::ifstream ifs(fileName);
-    std::string content( (std::istreambuf_iterator<char>(ifs) ),
-                         (std::istreambuf_iterator<char>()) );
-
-    if(!ifs.is_open()) {
-      LogMessage("Could not open texture. Probably crashing");
-    }
-
-    bimg::ImageContainer* imageContainer = bimg::imageParse(&s_allocator, (void*)content.c_str(), (uint32_t)content.length());
-
-    const bgfx::Memory* mem = bgfx::makeRef(
-                      imageContainer->m_data
-                    , imageContainer->m_size
-                    , imageReleaseCb
-                    , imageContainer
-                    );
-
-    return bgfx::createTexture2D(
-                      uint16_t(imageContainer->m_width)
-                    , uint16_t(imageContainer->m_height)
-                    , 1 < imageContainer->m_numMips
-                    , imageContainer->m_numLayers
-                    , bgfx::TextureFormat::Enum(imageContainer->m_format)
-                    , 0
-                    , mem
-                    );
-  };
-
   void SetMatrix(Transform &transform, float mtx[16]) {
     auto rotation = transform.rotation;
     bx::mtxRotateXYZ(mtx, rotation.x, rotation.y, rotation.z);
@@ -118,18 +41,22 @@ namespace Fate {
     component.viewPort = { 0, 0, 1, 1 };
   }
 
-  entt::entity& Renderer::MakeSprite(entt::entity& sprite,
+  entt::entity& Renderer::MakeSprite(entt::entity& entity,
                                      entt::registry& registry,
                                      std::string textureName, RenderSize size) {
-    auto &transform = registry.assign<Transform>(sprite);
-    auto &render = registry.assign<Sprite>(sprite);
-    render.size = size;
-    render.textureId = textureName;
+    auto &transform = registry.assign<Transform>(entity);
+    auto &render = registry.assign<Sprite>(entity);
     render.indexBufferId = 0;
     render.vertexBufferId = 0;
+    auto programId = entt::hashed_string{"sprite"};
+    render.programHandle = shaderManager.programs.at(programId);
     render.type = RenderType::SPRITE;
 
-    return sprite;
+    auto textureId = entt::hashed_string{textureName.c_str()};
+    render.size = size;
+    render.texture = game->resourceManager.textures.at(textureId);
+
+    return entity;
   }
 
   void Renderer::InitializeRenderer(Game *_game,
@@ -154,10 +81,10 @@ namespace Fate {
     bgfx::renderFrame();
     bgfx::init(init);
 
-    shaderManager.LoadProgram("shaders/cubes.vshader.bin", "shaders/cubes.fshader.bin", 0);
-    shaderManager.LoadProgram("shaders/sprite.vshader.bin", "shaders/sprite.fshader.bin", 1);
+    shaderManager.LoadProgram("shaders/cubes.vshader.bin", "shaders/cubes.fshader.bin", "cubes");
+    shaderManager.LoadProgram("shaders/sprite.vshader.bin", "shaders/sprite.fshader.bin", "sprite");
 
-    PosTexcoordVertex::init();
+    spriteConstants.Initialize();
 
     bgfx::reset(windowState.width, windowState.height, BGFX_RESET_VSYNC);
      // Enable debug text.
@@ -184,19 +111,6 @@ namespace Fate {
 
       bgfx::touch(cameraInfo.viewId);
     }
-
-    // Create static vertex buffer.
-    m_vbh = bgfx::createVertexBuffer
-      (
-       bgfx::makeRef(s_cubeVertices, sizeof(s_cubeVertices) ),
-       PosTexcoordVertex::ms_decl
-       );
-
-    m_ibh = bgfx::createIndexBuffer(bgfx::makeRef(s_cubeIndices, sizeof(s_cubeIndices) ) );
-
-    s_texColor  = bgfx::createUniform("s_texColor",  bgfx::UniformType::Sampler);
-
-    m_textureColor = loadTexture("textures/FATE.png");
   }
 
   void Renderer::Render(WindowState& windowState,
@@ -212,7 +126,6 @@ namespace Fate {
         float view[16];
         SetMatrix(cameraTransform, view);
         auto &cameraInfo = cameras.get<CameraComponent>(cameraEntity);
-        LogMessage(std::to_string(cameraTransform.position.z));
         float proj[16];
         bx::mtxProj(proj,
                     cameraInfo.fov,
@@ -224,7 +137,6 @@ namespace Fate {
         bgfx::setViewTransform(cameraInfo.viewId, view, proj);
 
         auto &cameraRect = cameraInfo.viewPort;
-        // Set view 0 default viewport.
         bgfx::setViewRect(cameraInfo.viewId,
                           cameraRect.x,
                           cameraRect.y,
@@ -233,50 +145,30 @@ namespace Fate {
 
         bgfx::touch(cameraInfo.viewId);
 
-        auto renderables = entityState.registry.view<Transform,RenderComponent>();
-        for(auto renderable : renderables) {
-          auto &render = renderables.get<RenderComponent>(renderable);
-          auto &transform = renderables.get<Transform>(renderable);
+        { // render sprites
 
-          // float mtx[16];
-          // SetMatrix(transform, mtx);
+          auto renderables = entityState.registry.view<Transform,Sprite>();
+          for(auto renderable : renderables) {
+            auto &sprite = renderables.get<Sprite>(renderable);
+            auto &transform = renderables.get<Transform>(renderable);
 
-          // bgfx::setTransform(mtx);
-          // bgfx::setVertexBuffer(cameraInfo.viewId, m_vbh);
-          // bgfx::setIndexBuffer(m_ibh);
-          // bgfx::setTexture(cameraInfo.viewId, s_texColor,  m_textureColor);
-          // bgfx::setState(BGFX_STATE_DEFAULT);
+            float mtx[16];
+            SetMatrix(transform, mtx);
 
-          // shaderManager.UseProgram(1);
+            bgfx::setVertexBuffer(cameraInfo.viewId, *spriteConstants.vertexBufferHandle);
+            bgfx::setIndexBuffer(*spriteConstants.indexBufferHandle);
+            bgfx::setTexture(0, *spriteConstants.textureUniform,  *sprite.texture);
+            bgfx::setState(BGFX_STATE_DEFAULT);
+            bgfx::submit(cameraInfo.viewId, *sprite.programHandle);
+          }
         }
+        bgfx::frame();
     }
-
-    float mtx[16];
-    bx::mtxRotateY(mtx, 0.0f);
-
-    mtx[12] = 0.0f;
-    mtx[13] = 0.0f;
-    mtx[14] = 0.0f;
-    // Set model matrix for rendering.
-    bgfx::setTransform(mtx);
-
-    bgfx::setVertexBuffer(0, m_vbh);
-    bgfx::setIndexBuffer(m_ibh);
-    bgfx::setTexture(0, s_texColor,  m_textureColor);
-
-    bgfx::setState(BGFX_STATE_DEFAULT);
-
-    shaderManager.UseProgram(1);
-
-    bgfx::frame();
   }
 
   void Renderer::ShutdownRenderer(WindowState &windowState, RenderState &renderState) {
     LogMessage("Shutting down renderer");
-    bgfx::destroy(m_ibh);
-    bgfx::destroy(m_vbh);
-    bgfx::destroy(m_textureColor);
-    bgfx::destroy(s_texColor);
+    spriteConstants.Destroy();
     bgfx::shutdown();
   }
 

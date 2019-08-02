@@ -9,6 +9,6 @@ if(NOT TARGET entity)
   add_subdirectory(../entity "${CMAKE_BINARY_DIR}/src/entity")
 endif()
 
-add_library(renderer SHARED ../include/fate/renderer.h renderer.cpp ../include/fate/shader.h shader.cpp)
+add_library(renderer SHARED ../include/fate/renderer.h renderer.cpp ../include/fate/shader.h shader.cpp ../include/fate/sprite.h sprite.cpp)
 target_include_directories(renderer PUBLIC ../include)
 target_link_libraries(renderer PRIVATE window bgfx GL X11 bimg entity)

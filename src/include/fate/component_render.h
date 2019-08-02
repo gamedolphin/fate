@@ -1,6 +1,12 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <entt/entt.hpp>
+
+namespace bgfx {
+  struct TextureHandle;
+  struct ProgramHandle;
+}
 
 namespace Fate {
 
@@ -13,7 +19,7 @@ namespace Fate {
   struct RenderComponent {
     uint8_t vertexBufferId;
     uint8_t indexBufferId;
-    uint8_t programId;
+    std::shared_ptr<bgfx::ProgramHandle> programHandle;
     RenderType type;
   };
 
@@ -23,7 +29,7 @@ namespace Fate {
   };
 
   struct Sprite : RenderComponent {
-    std::string textureId;
+    std::shared_ptr<bgfx::TextureHandle> texture;
     RenderSize size;
   };
 };

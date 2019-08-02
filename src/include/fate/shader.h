@@ -2,15 +2,17 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
+#include <entt/entt.hpp>
+
+namespace bgfx {
+  struct ProgramHandle;
+}
 
 namespace Fate {
 
-  class  Program;
-
   class ShaderManager {
   public:
-    std::unordered_map<uint8_t,std::shared_ptr<Program>> programs = {};
-    uint8_t LoadProgram(const std::string &vertexPath, const std::string &fragmentPath, uint8_t key);
-    void UseProgram(uint8_t id);
+    std::unordered_map<entt::hashed_string::hash_type,std::shared_ptr<bgfx::ProgramHandle>> programs = {};
+    void LoadProgram(const std::string &vertexPath, const std::string &fragmentPath, std::string key);
   };
 }

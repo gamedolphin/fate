@@ -8,12 +8,6 @@
 
 namespace Fate {
 
-  class Program {
-  public:
-    std::string concatPath;
-    bgfx::ProgramHandle programHandle;
-  };
-
   bgfx::ShaderHandle GetShader(const std::string &fileName) {
     std::ifstream ifs(fileName);
     std::string content( (std::istreambuf_iterator<char>(ifs) ),
@@ -29,29 +23,17 @@ namespace Fate {
     return handle;
   }
 
-  uint8_t ShaderManager::LoadProgram(const std::string &vertexPath, const std::string &fragmentPath, uint8_t key) {
+  void ShaderManager::LoadProgram(const std::string &vertexPath, const std::string &fragmentPath, std::string key) {
 
     auto concatPath = vertexPath + fragmentPath;
-
-    for(auto const& [key, val] : programs) {
-      if(val->concatPath == concatPath) {
-        return key;
-      }
-    }
 
     auto vertexHandle = GetShader(vertexPath);
     auto fragmentHandle = GetShader(fragmentPath);
 
-    auto program = std::make_shared<Program>();
-    program->concatPath = concatPath;
-    program->programHandle = bgfx::createProgram(vertexHandle, fragmentHandle, true);
+    auto programHandle = bgfx::createProgram(vertexHandle, fragmentHandle, true);
 
-    programs.insert(std::make_pair(key, std::move(program)));
-
-    return key;
+    programs.insert(
+        std::make_pair(entt::hashed_string{key.c_str()},
+                       std::make_shared<bgfx::ProgramHandle>(programHandle)));
   };
-
-  void ShaderManager::UseProgram(uint8_t id) {
-    bgfx::submit(0,programs.at(id)->programHandle);
-  }
 }

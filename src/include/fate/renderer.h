@@ -2,6 +2,7 @@
 #include "window.h"
 #include "shader.h"
 #include "entity.h"
+#include "sprite.h"
 
 namespace Fate {
 
@@ -18,6 +19,7 @@ namespace Fate {
 
     Game *game;
 
+    SpriteConstants spriteConstants;
     ShaderManager shaderManager;
     void InitializeRenderer(Game* game, WindowState& windowState, RenderState& renderState, EntityState& entityState);
     void Render(WindowState& windowState, RenderState& renderState, EntityState &entityState);
