@@ -23,17 +23,14 @@ namespace Fate {
     return handle;
   }
 
-  void ShaderManager::LoadProgram(const std::string &vertexPath, const std::string &fragmentPath, std::string key) {
-
-    auto concatPath = vertexPath + fragmentPath;
-
+  void LoadShaderProgram(ShaderState &state, const std::string &vertexPath, const std::string &fragmentPath, std::string key) {
     auto vertexHandle = GetShader(vertexPath);
     auto fragmentHandle = GetShader(fragmentPath);
 
     auto programHandle = bgfx::createProgram(vertexHandle, fragmentHandle, true);
 
-    programs.insert(
+    state.programs.insert(
         std::make_pair(entt::hashed_string{key.c_str()},
                        std::make_shared<bgfx::ProgramHandle>(programHandle)));
-  };
+  }
 }

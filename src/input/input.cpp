@@ -4,7 +4,7 @@
 namespace Fate {
   SDL_Event eventBox;
 
-  InputState& InputManager::ReadInput(InputState &inputState) {
+  InputState& Input::ReadInput(InputState &inputState) {
     bool hasInput = SDL_PollEvent(&eventBox);
 
     switch(eventBox.type) {

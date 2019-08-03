@@ -5,17 +5,18 @@ struct SDL_Window;
 
 namespace Fate {
 
+  class Game;
+
   struct WindowState {
     SDL_Window* windowHandle;
     int width, height;
     std::string windowTitle;
   };
 
-  class WindowManager {
-  public:
-    void CreateWindow(WindowState& state);
-    void ShutdownWindow(WindowState& state);
-    ~WindowManager();
+  class Window {
+    friend class Game;
+    static void CreateWindow(WindowState& state);
+    static void ShutdownWindow(WindowState& state);
   };
 
   void* GetDisplayType(WindowState& windowState);

@@ -6,6 +6,7 @@
 #include "fate/component_render.h"
 #include "fate/component_transform.h"
 #include "fate/component_camera.h"
+#include "fate/sprite.h"
 #include <bgfx/bgfx.h>
 #include <bgfx/platform.h>
 #include <bx/math.h>
@@ -41,31 +42,23 @@ namespace Fate {
     component.viewPort = { 0, 0, 1, 1 };
   }
 
-  entt::entity& Renderer::MakeSprite(entt::entity& entity,
-                                     entt::registry& registry,
-                                     std::string textureName, RenderSize size) {
+  entt::entity& MakeSprite(entt::entity &entity,
+                           entt::registry& registry,
+                           ResourceState& resourceState,
+                           std::string textureName) {
     auto &transform = registry.assign<Transform>(entity);
     auto &render = registry.assign<Sprite>(entity);
-    render.indexBufferId = 0;
-    render.vertexBufferId = 0;
-    auto programId = entt::hashed_string{"sprite"};
-    render.programHandle = shaderManager.programs.at(programId);
-    render.type = RenderType::SPRITE;
 
     auto textureId = entt::hashed_string{textureName.c_str()};
-    render.size = size;
-    render.texture = game->resourceManager.textures.at(textureId);
+    render.texture = resourceState.textures.at(textureId);
 
     return entity;
   }
 
-  void Renderer::InitializeRenderer(Game *_game,
-                                    WindowState &windowState,
+  void Renderer::InitializeRenderer(WindowState &windowState,
                                     RenderState &renderState,
                                     EntityState &entityState) {
     LogMessage("Initializing renderer...");
-
-    game = _game;
 
     bgfx::PlatformData pd;
     pd.ndt = GetDisplayType(windowState);
@@ -81,10 +74,11 @@ namespace Fate {
     bgfx::renderFrame();
     bgfx::init(init);
 
-    shaderManager.LoadProgram("shaders/cubes.vshader.bin", "shaders/cubes.fshader.bin", "cubes");
-    shaderManager.LoadProgram("shaders/sprite.vshader.bin", "shaders/sprite.fshader.bin", "sprite");
+    LoadShaderProgram(renderState.shaderState,"shaders/cubes.vshader.bin", "shaders/cubes.fshader.bin", "cubes");
+    LoadShaderProgram(renderState.shaderState,"shaders/sprite.vshader.bin", "shaders/sprite.fshader.bin", "sprite");
 
-    spriteConstants.Initialize();
+    InitializeSpriteRenderProperties(renderState.shaderState,
+                                     renderState.spriteConstants);
 
     bgfx::reset(windowState.width, windowState.height, BGFX_RESET_VSYNC);
      // Enable debug text.
@@ -155,11 +149,11 @@ namespace Fate {
             float mtx[16];
             SetMatrix(transform, mtx);
 
-            bgfx::setVertexBuffer(cameraInfo.viewId, *spriteConstants.vertexBufferHandle);
-            bgfx::setIndexBuffer(*spriteConstants.indexBufferHandle);
-            bgfx::setTexture(0, *spriteConstants.textureUniform,  *sprite.texture);
+            bgfx::setVertexBuffer(cameraInfo.viewId, *renderState.spriteConstants.vertexBufferHandle);
+            bgfx::setIndexBuffer(*renderState.spriteConstants.indexBufferHandle);
+            bgfx::setTexture(0, *renderState.spriteConstants.textureUniform,  *sprite.texture);
             bgfx::setState(BGFX_STATE_DEFAULT);
-            bgfx::submit(cameraInfo.viewId, *sprite.programHandle);
+            bgfx::submit(cameraInfo.viewId, *renderState.spriteConstants.programHandle);
           }
         }
         bgfx::frame();
@@ -168,10 +162,7 @@ namespace Fate {
 
   void Renderer::ShutdownRenderer(WindowState &windowState, RenderState &renderState) {
     LogMessage("Shutting down renderer");
-    spriteConstants.Destroy();
+    DestroySpriteRenderProperties(renderState.spriteConstants);
     bgfx::shutdown();
-  }
-
-  Renderer::~Renderer() {
   }
 };

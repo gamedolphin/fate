@@ -3,32 +3,26 @@
 #include "shader.h"
 #include "entity.h"
 #include "sprite.h"
+#include "resource.h"
 
 namespace Fate {
 
-  struct RenderSize;
-
   struct RenderState {
-
+    ShaderState shaderState;
+    SpriteConstants spriteConstants;
   };
 
   class Game;
 
   class Renderer {
     friend class Game;
-
-    Game *game;
-
-    SpriteConstants spriteConstants;
-    ShaderManager shaderManager;
-    void InitializeRenderer(Game* game, WindowState& windowState, RenderState& renderState, EntityState& entityState);
-    void Render(WindowState& windowState, RenderState& renderState, EntityState &entityState);
-    void ShutdownRenderer(WindowState& windowState, RenderState& renderState);
-
-  public:
-    ~Renderer();
-    entt::entity& MakeSprite(entt::entity& entity,
-                             entt::registry& registry,
-                             std::string textureName, RenderSize size);
+    static void InitializeRenderer(WindowState& windowState, RenderState& renderState, EntityState& entityState);
+    static void Render(WindowState& windowState, RenderState& renderState, EntityState &entityState);
+    static void ShutdownRenderer(WindowState& windowState, RenderState& renderState);
   };
+
+  entt::entity& MakeSprite(entt::entity &entity,
+                           entt::registry& registry,
+                           ResourceState& resourceState,
+                           std::string textureName);
 };

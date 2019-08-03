@@ -4,6 +4,7 @@
 #include "input.h"
 #include "scene.h"
 #include "entity.h"
+#include "resource.h"
 
 namespace Fate {
 
@@ -14,5 +15,6 @@ namespace Fate {
     RenderState renderState;
     SceneState sceneState;
     EntityState entityState;
+    ResourceState resourceState;
   };
 }

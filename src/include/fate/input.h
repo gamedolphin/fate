@@ -8,8 +8,8 @@ namespace Fate {
     EventType eventType = EventType::NONE;
   };
 
-  class InputManager {
+  class Input {
   public:
-    InputState& ReadInput(InputState& inputState);
+    static InputState& ReadInput(InputState& inputState);
   };
 };

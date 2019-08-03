@@ -6,7 +6,7 @@
 #include <functional>
 
 namespace Fate {
-  void WindowManager::CreateWindow(WindowState &state) {
+  void Window::CreateWindow(WindowState &state) {
     LogMessage("Initializing window");
     if( SDL_Init( SDL_INIT_VIDEO ) < 0 ) {
       LogMessage( "SDL could not initialize!");
@@ -39,15 +39,12 @@ namespace Fate {
     return (void*)static_cast<uintptr_t>(info.info.x11.window);
   };
 
-  void WindowManager::ShutdownWindow(WindowState &state) {
+  void Window::ShutdownWindow(WindowState &state) {
     LogMessage("Shutting down window");
     if(state.windowHandle != nullptr) {
       SDL_DestroyWindow(state.windowHandle);
     }
     LogMessage("Window shutdown");
-  }
-
-  WindowManager::~WindowManager() {
-     SDL_Quit();
+    SDL_Quit();
   }
 };

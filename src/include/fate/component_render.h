@@ -28,7 +28,7 @@ namespace Fate {
     float height;
   };
 
-  struct Sprite : RenderComponent {
+  struct Sprite {
     std::shared_ptr<bgfx::TextureHandle> texture;
     RenderSize size;
   };

@@ -46,10 +46,18 @@ namespace Fate {
                     );
   };
 
-  void ResourceManager::LoadTexture(std::string fileName, std::string name) {
+  void LoadTexture(ResourceState& state, std::string fileName, std::string name) {
     auto textureHandle = loadTexture(fileName);
     auto key = entt::hashed_string{name.c_str()};
 
-    textures.insert(std::make_pair(key,std::make_shared<bgfx::TextureHandle>(textureHandle)));
+    state.textures.insert(std::make_pair(key,std::make_shared<bgfx::TextureHandle>(textureHandle)));
+  }
+
+  void UnloadAllResources(ResourceState& state) {
+
+    //destroy all textures
+    for (auto texture : state.textures) {
+      bgfx::destroy(*texture.second);
+    }
   }
 }

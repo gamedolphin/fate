@@ -2,7 +2,6 @@
 #include "fate/core.h"
 #include "fate/log.h"
 #include "fate/gamestate.h"
-#include "fate/component_render.h"
 
 using namespace Fate;
 
@@ -15,15 +14,15 @@ int main(int argc, char** argv) {
                            .height = 600
   };
   Game game;
-
   game.Initialize(gameState);
 
-  game.resourceManager.LoadTexture("textures/FATE.png", "Fate");
+  Fate::LoadTexture(gameState.resourceState,"textures/FATE.png", "Fate");
 
-  RenderSize size = { 20, 20 };
-  auto entity = gameState.entityState.registry.create();
-  auto sprite = game.renderer.MakeSprite(entity, gameState.entityState.registry,
-                                           "Fate", size);
+  auto entity = Fate::CreateEntity(gameState.entityState);
+  auto sprite = Fate::MakeSprite(entity,
+                                 gameState.entityState.registry,
+                                 gameState.resourceState,
+                                 "Fate");
 
   // SceneConfig sceneConfig;
   // sceneConfig.OnInitialize = [](GameState& state) {
@@ -51,5 +50,6 @@ int main(int argc, char** argv) {
   // game.sceneManager.SetScene(gameState, sceneId);
 
   game.Run(gameState);
+
   return 0;
 }

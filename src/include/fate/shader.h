@@ -10,9 +10,9 @@ namespace bgfx {
 
 namespace Fate {
 
-  class ShaderManager {
-  public:
+  struct ShaderState {
     std::unordered_map<entt::hashed_string::hash_type,std::shared_ptr<bgfx::ProgramHandle>> programs = {};
-    void LoadProgram(const std::string &vertexPath, const std::string &fragmentPath, std::string key);
   };
+
+  void LoadShaderProgram(ShaderState &state, const std::string &vertexPath, const std::string &fragmentPath, std::string key);
 }
