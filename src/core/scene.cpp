@@ -3,26 +3,38 @@
 
 namespace Fate {
 
+  struct ActiveScene {};
+
   void Scene::Update(GameState& state) {
     if(initialized == false) {
-      config.OnInitialize(state);
+      config.OnInitialize(state, *this);
       initialized = true;
     }
-    config.OnUpdate(state);
+    config.OnUpdate(state, *this);
   }
 
   void Scene::Shutdown(GameState& state) {
-    config.OnShutdown(state);
+    config.OnShutdown(state, *this);
     initialized = false;
+    auto &registry = state.entityState.registry;
+    for(const auto entity: registry.view<ActiveScene>()) {
+      registry.destroy(entity);
+    }
   }
 
-  int AddScene(GameState &gameState, SceneConfig config, int sceneId) {
+  entt::entity Scene::CreateEntity(GameState& state) {
+    auto entity = Fate::CreateEntity(state.entityState);
+    state.entityState.registry.assign <ActiveScene>(entity);
+    return entity;
+  }
+
+  int Scenes::AddScene(GameState &gameState, SceneConfig config, int sceneId) {
     Scene scene(sceneId,config);
     gameState.sceneState.sceneList.insert(std::make_pair(sceneId, scene));
     return sceneId;
   };
 
-  void SetScene(GameState& gameState, int sceneId) {
+  void Scenes::SetScene(GameState& gameState, int sceneId) {
     auto &sceneState = gameState.sceneState;
     if(sceneState.currentSceneId == sceneId) {
       return;
@@ -37,7 +49,7 @@ namespace Fate {
     }
   }
 
-  void SceneManager::Update(GameState &gameState) {
+  void Scenes::Update(GameState &gameState) {
     if(gameState.sceneState.currentSceneId == -1) {
       return;
     }

@@ -1,4 +1,5 @@
 #include "fate/resource.h"
+#include "fate/gamestate.h"
 #include "fate/log.h"
 #include <bgfx/bgfx.h>
 #include <bimg/decode.h>
@@ -46,17 +47,23 @@ namespace Fate {
                     );
   };
 
-  void LoadTexture(ResourceState& state, std::string fileName, std::string name) {
+  void Resources::LoadTexture(ResourceState& state, std::string fileName, std::string name) {
     auto textureHandle = loadTexture(fileName);
     auto key = entt::hashed_string{name.c_str()};
-
     state.textures.insert(std::make_pair(key,std::make_shared<bgfx::TextureHandle>(textureHandle)));
   }
 
-  void UnloadAllResources(ResourceState& state) {
+  void Resources::LoadTexture(GameState& state, std::string fileName, std::string name) {
+    auto textureHandle = loadTexture(fileName);
+    auto key = entt::hashed_string{name.c_str()};
+
+    state.resourceState.textures.insert(std::make_pair(key,std::make_shared<bgfx::TextureHandle>(textureHandle)));
+  }
+
+  void Resources::UnloadAllResources(GameState& state) {
 
     //destroy all textures
-    for (auto texture : state.textures) {
+    for (auto texture : state.resourceState.textures) {
       bgfx::destroy(*texture.second);
     }
   }

@@ -13,16 +13,17 @@ namespace Fate {
   };
 
   class Game;
+  struct GameState;
 
   class Renderer {
     friend class Game;
     static void InitializeRenderer(WindowState& windowState, RenderState& renderState, EntityState& entityState);
     static void Render(WindowState& windowState, RenderState& renderState, EntityState &entityState);
     static void ShutdownRenderer(WindowState& windowState, RenderState& renderState);
-  };
 
-  entt::entity& MakeSprite(entt::entity &entity,
-                           entt::registry& registry,
-                           ResourceState& resourceState,
+  public:
+    static entt::entity& MakeSprite(entt::entity &entity,
+                           GameState& gameState,
                            std::string textureName);
+  };
 };

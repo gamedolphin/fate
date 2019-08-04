@@ -42,15 +42,14 @@ namespace Fate {
     component.viewPort = { 0, 0, 1, 1 };
   }
 
-  entt::entity& MakeSprite(entt::entity &entity,
-                           entt::registry& registry,
-                           ResourceState& resourceState,
+  entt::entity& Renderer::MakeSprite(entt::entity &entity,
+                           GameState& state,
                            std::string textureName) {
-    auto &transform = registry.assign<Transform>(entity);
-    auto &render = registry.assign<Sprite>(entity);
+    auto &transform = state.entityState.registry.assign<Transform>(entity);
+    auto &render = state.entityState.registry.assign<Sprite>(entity);
 
     auto textureId = entt::hashed_string{textureName.c_str()};
-    render.texture = resourceState.textures.at(textureId);
+    render.texture = state.resourceState.textures.at(textureId);
 
     return entity;
   }

@@ -11,40 +11,27 @@ int main(int argc, char** argv) {
                            .width = 800,
                            .height = 600
   };
+
   Fate::Game::Initialize(gameState);
-
-  Fate::LoadTexture(gameState.resourceState,"textures/FATE.png", "Fate");
-
-  auto entity = Fate::CreateEntity(gameState.entityState);
-  auto sprite = Fate::MakeSprite(entity,
-                                 gameState.entityState.registry,
-                                 gameState.resourceState,
-                                 "Fate");
+  Fate::Resources::LoadTexture(gameState,"textures/FATE.png", "Fate");
 
   Fate::SceneConfig sceneConfig;
-  sceneConfig.OnInitialize = [](Fate::GameState& state) {
+  sceneConfig.OnInitialize = [](Fate::GameState& state, Fate::Scene& scene) {
                                Fate::LogMessage("Initializing game");
+
+                               auto entity = scene.CreateEntity(state);
+                               auto sprite = Fate::Renderer::MakeSprite(entity,
+                                                                        state,
+                                                                        "Fate");
                              };
-  int counter = 0;
-  sceneConfig.OnUpdate = [&](Fate::GameState& state) {
-                           if(++counter >= 10) {
-                             Fate::SetScene(state, 1);
-                           }
-                           Fate::LogMessage(std::to_string(counter));
+
+  sceneConfig.OnUpdate = [&](Fate::GameState& state, Fate::Scene& scene) {
                          };
-  int sceneId = Fate::AddScene(gameState, sceneConfig, 0);
 
-  Fate::SceneConfig sceneConfig2;
-  sceneConfig2.OnUpdate = [&](Fate::GameState& state) {
-                            if(--counter <= 0) {
-                              Fate::Game::StopGame(state);
-                            }
-                            Fate::LogMessage(std::to_string(counter));
-                          };
 
-  int sceneId2 = Fate::AddScene(gameState, sceneConfig2, 1);
+  int sceneId = Fate::Scenes::AddScene(gameState, sceneConfig, 0);
 
-  Fate::SetScene(gameState, sceneId);
+  Fate::Scenes::SetScene(gameState, sceneId);
 
   Fate::Game::Run(gameState);
 

@@ -14,14 +14,14 @@ namespace Fate {
     while(state.isRunning) {
       state.inputState = Input::ReadInput(state.inputState);
       if(state.inputState.eventType == EventType::QUIT) {
-        state.isRunning = false;
+        StopGame(state);
         break;
       }
-      SceneManager::Update(state);
+      Scenes::Update(state);
       Renderer::Render(state.windowState, state.renderState, state.entityState);
     }
 
-    UnloadAllResources(state.resourceState);
+    Resources::UnloadAllResources(state);
     Renderer::ShutdownRenderer(state.windowState, state.renderState);
     Window::ShutdownWindow(state.windowState);
   }

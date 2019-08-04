@@ -2,22 +2,25 @@
 #include <functional>
 #include <memory>
 #include <unordered_map>
+#include <entt/entt.hpp>
 
 namespace Fate {
 
   class Game;
+  class Scene;
   struct GameState;
 
-  static std::function<void(GameState&)> noop = [](GameState& state) {};
+  static std::function<void(GameState&, Scene& scene)> noop = [](GameState& state, Scene& scene) {};
 
   struct SceneConfig {
-    std::function<void(GameState&)> OnInitialize = noop;
-    std::function<void(GameState&)> OnUpdate = noop;
-    std::function<void(GameState&)> OnShutdown = noop;
+    std::string tag;
+    std::function<void(GameState&, Scene&)> OnInitialize = noop;
+    std::function<void(GameState&, Scene&)> OnUpdate = noop;
+    std::function<void(GameState&, Scene&)> OnShutdown = noop;
   };
 
   class Scene {
-    friend class SceneManager;
+    friend class Scenes;
 
     void Update(GameState& state);
     SceneConfig config;
@@ -25,8 +28,9 @@ namespace Fate {
     bool initialized = false;
   public:
     int sceneId;
-    Scene(int id, SceneConfig _config) : config(_config), sceneId(id) {}
+    Scene(int id, SceneConfig _config) : config(_config), sceneId(id) { }
     void Shutdown(GameState& state);
+    entt::entity CreateEntity(GameState& state);
   };
 
   struct SceneState {
@@ -34,11 +38,11 @@ namespace Fate {
     std::unordered_map<int,Scene> sceneList = {};
   };
 
-  class SceneManager {
+  class Scenes {
     friend class Game;
     static void Update(GameState& gameState);
+  public:
+    static int AddScene(GameState& gameState, SceneConfig config, int sceneId);
+    static void SetScene(GameState& gameState, int sceneId);
   };
-
-  int AddScene(GameState& gameState, SceneConfig config, int sceneId);
-  void SetScene(GameState& gameState, int sceneId);
 };
