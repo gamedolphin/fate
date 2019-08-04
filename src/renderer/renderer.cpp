@@ -18,18 +18,21 @@
 
 namespace Fate {
 
-  void SetMatrix(Transform &transform, float mtx[16]) {
+  void SetMatrix(Transform &transform) {
+    if(transform.isDirty == false)  return;
     auto rotation = transform.rotation;
-    bx::mtxRotateXYZ(mtx, rotation.x, rotation.y, rotation.z);
-    mtx[12] = transform.position.x;
-    mtx[13] = transform.position.y;
-    mtx[14] = transform.position.z;
+    auto position = transform.position;
+    bx::mtxRotateXYZ(transform.mtx, rotation.x, rotation.y, rotation.z);
+    transform.mtx[12] = transform.position.x;
+    transform.mtx[13] = transform.position.y;
+    transform.mtx[14] = transform.position.z;
+    transform.isDirty = false;
   };
 
   void CreateDefaultCamera(WindowState& windowState, entt::registry &registry) {
     auto camera = registry.create();
     auto &transform = registry.assign<Transform>(camera);
-    transform.position = { 0, 0, 1 };
+    transform.position = { 0, 0, 2 };
     transform.rotation = { 0, M_PI, 0 };
     auto &component = registry.assign<CameraComponent>(camera);
     component = {
@@ -116,8 +119,7 @@ namespace Fate {
         auto &cameraPosition = cameraTransform.position;
         auto &cameraRotation = cameraTransform.rotation;
 
-        float view[16];
-        SetMatrix(cameraTransform, view);
+        SetMatrix(cameraTransform);
         auto &cameraInfo = cameras.get<CameraComponent>(cameraEntity);
         float proj[16];
         bx::mtxProj(proj,
@@ -127,7 +129,7 @@ namespace Fate {
                     cameraInfo.far,
                     bgfx::getCaps()->homogeneousDepth);
 
-        bgfx::setViewTransform(cameraInfo.viewId, view, proj);
+        bgfx::setViewTransform(cameraInfo.viewId, cameraTransform.mtx, proj);
 
         auto &cameraRect = cameraInfo.viewPort;
         bgfx::setViewRect(cameraInfo.viewId,
@@ -145,8 +147,9 @@ namespace Fate {
             auto &sprite = renderables.get<Sprite>(renderable);
             auto &transform = renderables.get<Transform>(renderable);
 
-            float mtx[16];
-            SetMatrix(transform, mtx);
+            SetMatrix(transform);
+
+            bgfx::setTransform(transform.mtx);
 
             bgfx::setVertexBuffer(cameraInfo.viewId, *renderState.spriteConstants.vertexBufferHandle);
             bgfx::setIndexBuffer(*renderState.spriteConstants.indexBufferHandle);
