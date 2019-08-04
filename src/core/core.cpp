@@ -17,7 +17,7 @@ namespace Fate {
         state.isRunning = false;
         break;
       }
-      sceneManager.Update(state);
+      SceneManager::Update(state);
       Renderer::Render(state.windowState, state.renderState, state.entityState);
     }
 

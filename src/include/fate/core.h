@@ -10,10 +10,8 @@ namespace Fate {
 
   class Game {
   public:
-    SceneManager sceneManager;
-
-    void Initialize(GameState& state);
-    void Run(GameState& state);
-    void StopGame(GameState& state);
+    static void Initialize(GameState& state);
+    static void Run(GameState& state);
+    static void StopGame(GameState& state);
   };
 };

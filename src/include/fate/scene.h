@@ -5,6 +5,7 @@
 
 namespace Fate {
 
+  class Game;
   struct GameState;
 
   static std::function<void(GameState&)> noop = [](GameState& state) {};
@@ -19,13 +20,13 @@ namespace Fate {
     friend class SceneManager;
 
     void Update(GameState& state);
-    void Shutdown(GameState& state);
     SceneConfig config;
 
     bool initialized = false;
   public:
     int sceneId;
     Scene(int id, SceneConfig _config) : config(_config), sceneId(id) {}
+    void Shutdown(GameState& state);
   };
 
   struct SceneState {
@@ -34,11 +35,10 @@ namespace Fate {
   };
 
   class SceneManager {
-    int uKey = 0;
-  public:
-    int AddScene(GameState& gameState, SceneConfig config);
-    int AddScene(GameState& gameState, SceneConfig config, int sceneId);
-    void SetScene(GameState& gameState, int sceneId);
-    void Update(GameState& gameState);
+    friend class Game;
+    static void Update(GameState& gameState);
   };
+
+  int AddScene(GameState& gameState, SceneConfig config, int sceneId);
+  void SetScene(GameState& gameState, int sceneId);
 };

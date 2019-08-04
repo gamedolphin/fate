@@ -3,18 +3,15 @@
 #include "fate/log.h"
 #include "fate/gamestate.h"
 
-using namespace Fate;
-
 int main(int argc, char** argv) {
 
-  GameState gameState;
+  Fate::GameState gameState;
   gameState.windowState = {
                            .windowTitle = "Sprite Test",
                            .width = 800,
                            .height = 600
   };
-  Game game;
-  game.Initialize(gameState);
+  Fate::Game::Initialize(gameState);
 
   Fate::LoadTexture(gameState.resourceState,"textures/FATE.png", "Fate");
 
@@ -24,32 +21,32 @@ int main(int argc, char** argv) {
                                  gameState.resourceState,
                                  "Fate");
 
-  // SceneConfig sceneConfig;
-  // sceneConfig.OnInitialize = [](GameState& state) {
-  //                              Fate::LogMessage("Initializing game");
-  //                            };
-  // int counter = 0;
-  // sceneConfig.OnUpdate = [&](GameState& state) {
-  //                          if(++counter >= 10) {
-  //                            game.sceneManager.SetScene(state, 1);
-  //                          }
-  //                          Fate::LogMessage(std::to_string(counter));
-  //                        };
-  // int sceneId = game.sceneManager.AddScene(gameState, sceneConfig, 0);
+  Fate::SceneConfig sceneConfig;
+  sceneConfig.OnInitialize = [](Fate::GameState& state) {
+                               Fate::LogMessage("Initializing game");
+                             };
+  int counter = 0;
+  sceneConfig.OnUpdate = [&](Fate::GameState& state) {
+                           if(++counter >= 10) {
+                             Fate::SetScene(state, 1);
+                           }
+                           Fate::LogMessage(std::to_string(counter));
+                         };
+  int sceneId = Fate::AddScene(gameState, sceneConfig, 0);
 
-  // SceneConfig sceneConfig2;
-  // sceneConfig2.OnUpdate = [&](GameState& state) {
-  //                           if(--counter <= 0) {
-  //                             game.StopGame(state);
-  //                           }
-  //                           Fate::LogMessage(std::to_string(counter));
-  //                         };
+  Fate::SceneConfig sceneConfig2;
+  sceneConfig2.OnUpdate = [&](Fate::GameState& state) {
+                            if(--counter <= 0) {
+                              Fate::Game::StopGame(state);
+                            }
+                            Fate::LogMessage(std::to_string(counter));
+                          };
 
-  // int sceneId2 = game.sceneManager.AddScene(gameState, sceneConfig2, 1);
+  int sceneId2 = Fate::AddScene(gameState, sceneConfig2, 1);
 
-  // game.sceneManager.SetScene(gameState, sceneId);
+  Fate::SetScene(gameState, sceneId);
 
-  game.Run(gameState);
+  Fate::Game::Run(gameState);
 
   return 0;
 }

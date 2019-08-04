@@ -16,23 +16,13 @@ namespace Fate {
     initialized = false;
   }
 
-  int SceneManager::AddScene(GameState &gameState, SceneConfig config) {
-    Scene scene(uKey,config);
-    uKey = uKey + 1;
-    gameState.sceneState.sceneList.insert(std::make_pair(uKey, scene));
-    return uKey;
-  };
-
-  int SceneManager::AddScene(GameState &gameState, SceneConfig config, int sceneId) {
-    Scene scene(uKey,config);
+  int AddScene(GameState &gameState, SceneConfig config, int sceneId) {
+    Scene scene(sceneId,config);
     gameState.sceneState.sceneList.insert(std::make_pair(sceneId, scene));
-    if(sceneId >= uKey) {
-      uKey = sceneId + 1;
-    }
     return sceneId;
   };
 
-  void SceneManager::SetScene(GameState& gameState, int sceneId) {
+  void SetScene(GameState& gameState, int sceneId) {
     auto &sceneState = gameState.sceneState;
     if(sceneState.currentSceneId == sceneId) {
       return;
