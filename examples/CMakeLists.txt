@@ -1,4 +1,4 @@
 cmake_minimum_required(VERSION 3.10.2)
 
 add_subdirectory(basic)
-add_subdirectory(basic2)
+add_subdirectory(movement)

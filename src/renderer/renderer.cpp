@@ -19,30 +19,57 @@
 namespace Fate {
 
   void SetMatrix(Transform &transform) {
-    if(transform.isDirty == false)  return;
-    auto rotation = transform.rotation;
-    auto position = transform.position;
+    if(transform.isDirty == false)  {
+      return;
+    }
+    auto &rotation = transform.rotation;
+    auto &position = transform.position;
     bx::mtxRotateXYZ(transform.mtx, rotation.x, rotation.y, rotation.z);
-    transform.mtx[12] = transform.position.x;
-    transform.mtx[13] = transform.position.y;
-    transform.mtx[14] = transform.position.z;
+    transform.mtx[12] = position.x;
+    transform.mtx[13] = position.y;
+    transform.mtx[14] = position.z;
     transform.isDirty = false;
   };
 
   void CreateDefaultCamera(WindowState& windowState, entt::registry &registry) {
     auto camera = registry.create();
     auto &transform = registry.assign<Transform>(camera);
-    transform.position = { 0, 0, 2 };
-    transform.rotation = { 0, M_PI, 0 };
+    transform.position = { 0, 0, 5 };
+    transform.rotation = { 0, 0, 0 };
     auto &component = registry.assign<CameraComponent>(camera);
     component = {
                  0,
                  60.0f,
                  float(windowState.width)/float(windowState.height),
-                 0.1f,
+                 1.0f,
                  100.0f
     };
     component.viewPort = { 0, 0, 1, 1 };
+  }
+
+  void SetupCamera(CameraComponent& cameraInfo, WindowState& windowState) {
+    if(cameraInfo.dirty) {
+      if(cameraInfo.cameraType == CameraType::ORTHOGRAPHIC) {
+        bx::mtxOrtho(cameraInfo.projectionMatrix,
+                     -cameraInfo.orthoSize*cameraInfo.aspectRatio,
+                     cameraInfo.orthoSize*cameraInfo.aspectRatio,
+                     -cameraInfo.orthoSize,
+                     cameraInfo.orthoSize,
+                     cameraInfo.near,
+                     cameraInfo.far,
+                     0,
+                     bgfx::getCaps()->homogeneousDepth);
+      }
+      else {
+        bx::mtxProj(cameraInfo.projectionMatrix,
+                    cameraInfo.fov,
+                    cameraInfo.aspectRatio,
+                    cameraInfo.near,
+                    cameraInfo.far,
+                    bgfx::getCaps()->homogeneousDepth);
+      }
+      cameraInfo.dirty = false;
+    }
   }
 
   entt::entity& Renderer::MakeSprite(entt::entity &entity,
@@ -115,50 +142,43 @@ namespace Fate {
 
     auto cameras = entityState.registry.view<Transform, CameraComponent>();
     for(auto cameraEntity: cameras) {
-        auto &cameraTransform = cameras.get<Transform>(cameraEntity);
-        auto &cameraPosition = cameraTransform.position;
-        auto &cameraRotation = cameraTransform.rotation;
 
-        SetMatrix(cameraTransform);
-        auto &cameraInfo = cameras.get<CameraComponent>(cameraEntity);
-        float proj[16];
-        bx::mtxProj(proj,
-                    cameraInfo.fov,
-                    cameraInfo.aspectRatio,
-                    cameraInfo.near,
-                    cameraInfo.far,
-                    bgfx::getCaps()->homogeneousDepth);
+      auto &cameraTransform = cameras.get<Transform>(cameraEntity);
+      SetMatrix(cameraTransform);
 
-        bgfx::setViewTransform(cameraInfo.viewId, cameraTransform.mtx, proj);
+      auto &cameraInfo = cameras.get<CameraComponent>(cameraEntity);
+      SetupCamera(cameraInfo, windowState);
 
-        auto &cameraRect = cameraInfo.viewPort;
-        bgfx::setViewRect(cameraInfo.viewId,
-                          cameraRect.x,
-                          cameraRect.y,
-                          cameraRect.width * windowState.width,
-                          cameraRect.height * windowState.height);
+      bgfx::setViewTransform(cameraInfo.viewId, cameraTransform.mtx, cameraInfo.projectionMatrix);
 
-        bgfx::touch(cameraInfo.viewId);
+      auto &cameraRect = cameraInfo.viewPort;
+      bgfx::setViewRect(cameraInfo.viewId,
+                        cameraRect.x,
+                        cameraRect.y,
+                        cameraRect.width * windowState.width,
+                        cameraRect.height * windowState.height);
 
-        { // render sprites
+      bgfx::touch(cameraInfo.viewId);
 
-          auto renderables = entityState.registry.view<Transform,Sprite>();
-          for(auto renderable : renderables) {
-            auto &sprite = renderables.get<Sprite>(renderable);
-            auto &transform = renderables.get<Transform>(renderable);
+      { // render sprites
 
-            SetMatrix(transform);
+        auto renderables = entityState.registry.view<Transform,Sprite>();
+        for(auto renderable : renderables) {
+          auto &sprite = renderables.get<Sprite>(renderable);
+          auto &transform = renderables.get<Transform>(renderable);
 
-            bgfx::setTransform(transform.mtx);
+          SetMatrix(transform);
 
-            bgfx::setVertexBuffer(cameraInfo.viewId, *renderState.spriteConstants.vertexBufferHandle);
-            bgfx::setIndexBuffer(*renderState.spriteConstants.indexBufferHandle);
-            bgfx::setTexture(0, *renderState.spriteConstants.textureUniform,  *sprite.texture);
-            bgfx::setState(BGFX_STATE_DEFAULT);
-            bgfx::submit(cameraInfo.viewId, *renderState.spriteConstants.programHandle);
-          }
+          bgfx::setTransform(transform.mtx);
+
+          bgfx::setVertexBuffer(cameraInfo.viewId, *renderState.spriteConstants.vertexBufferHandle);
+          bgfx::setIndexBuffer(*renderState.spriteConstants.indexBufferHandle);
+          bgfx::setTexture(0, *renderState.spriteConstants.textureUniform,  *sprite.texture);
+          bgfx::setState(BGFX_STATE_DEFAULT);
+          bgfx::submit(cameraInfo.viewId, *renderState.spriteConstants.programHandle);
         }
-        bgfx::frame();
+      }
+      bgfx::frame();
     }
   }
 

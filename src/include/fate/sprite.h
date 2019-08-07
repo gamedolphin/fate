@@ -11,8 +11,6 @@ namespace bgfx {
 
 namespace Fate {
 
-  struct RenderState;
-
   struct PosTexcoordVertex
   {
     float m_x;
