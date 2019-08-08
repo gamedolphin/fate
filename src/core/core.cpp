@@ -26,8 +26,8 @@ namespace Fate {
         break;
       }
 
-      while(Time::HasLag(state.timeState)) {
-        Time::Update(state.timeState);
+      while(state.timeState.lag >= state.timeState.timestep) {
+        state.timeState.lag -= state.timeState.timestep;
         // busy wait
       }
 

@@ -23,8 +23,6 @@ namespace Fate {
     friend class Game;
     static void Initialize(TimeState& state);
     static void FrameStart(TimeState& state);
-    static bool HasLag(TimeState& state);
-    static void Update(TimeState& state);
 
   public:
     static float GetDeltaTime(GameState& state);

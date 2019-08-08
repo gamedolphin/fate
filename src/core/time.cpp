@@ -22,16 +22,8 @@ namespace Fate {
     state.lag += std::chrono::duration_cast<std::chrono::nanoseconds>(state.deltaTime);
   }
 
-  bool Time::HasLag(TimeState& state) {
-    return state.lag >= state.timestep;
-  };
-
-  void Time::Update(TimeState& state) {
-    state.lag -= state.timestep;
-  };
-
   float Time::GetDeltaTime(GameState &state) {
     fsec fs = state.timeState.deltaTime;
-    return (float)fs.count()/1000;
+    return fs.count()/1000;
   };
 };
