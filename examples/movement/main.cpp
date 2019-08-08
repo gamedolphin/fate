@@ -3,6 +3,7 @@
 #include <fate/log.h>
 #include <fate/gamestate.h>
 #include <fate/input.h>
+#include <fate/time.h>
 #include "fate/component_transform.h"
 
 struct FateLogo {};
@@ -30,10 +31,11 @@ int main(int argc, char** argv) {
                                state.entityState.registry.assign<FateLogo>(entity);
                              };
 
-  float multiplier = 0.01f;
+  float maxSpeed = 2;
   float speedX = 0;
   float speedY = 0;
   sceneConfig.OnUpdate = [&](Fate::GameState& state, Fate::Scene& scene) {
+                           float multiplier = Fate::Time::GetDeltaTime(state);
                            auto &registry = state.entityState.registry;
                            auto view = registry.view<FateLogo,Fate::Transform>();
 
@@ -44,20 +46,20 @@ int main(int argc, char** argv) {
                              speedY = 0;
 
                              if(Fate::Input::IsKeyPressed(state.inputState.keyboardState, Fate::KeyCode::W)) {
-                               speedY = 1;
+                               speedY = maxSpeed;
                              }
                              else if(Fate::Input::IsKeyPressed(state.inputState.keyboardState, Fate::KeyCode::S)) {
-                               speedY = -1;
+                               speedY = -maxSpeed;
                              }
 
                              if(Fate::Input::IsKeyPressed(state.inputState.keyboardState, Fate::KeyCode::A)) {
-                               speedX = -1;
+                               speedX = -maxSpeed;
                              }
                              else if(Fate::Input::IsKeyPressed(state.inputState.keyboardState, Fate::KeyCode::D)) {
-                               speedX = 1;
+                               speedX = maxSpeed;
                              }
 
-                             // transform = Fate::SetTransformXY(transform, transform.position.x + speedX*multiplier, transform.position.y + speedY * multiplier);
+                             transform = Fate::SetTransformXY(transform, transform.position.x + speedX*multiplier, transform.position.y + speedY * multiplier);
                            }
                          };
 

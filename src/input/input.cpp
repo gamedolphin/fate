@@ -25,24 +25,24 @@ namespace Fate {
   }
 
   InputState& Input::ReadInput(InputState &inputState) {
-    bool hasInput = SDL_PollEvent(&eventBox);
-
-    switch(eventBox.type) {
-    case SDL_QUIT:
-      inputState.eventType = EventType::QUIT;
-      break;
-    case SDL_KEYUP:
-      inputState.eventType = EventType::KEY_UP;
-      UpdateKeyboardState(inputState.keyboardState, eventBox.key.keysym.sym, false);
-      break;
-    case SDL_KEYDOWN:
-      inputState.eventType = EventType::KEY_DOWN;
-      UpdateKeyboardState(inputState.keyboardState, eventBox.key.keysym.sym, true);
-      break;
-    default:
-      inputState.eventType = EventType::NONE;
-      break;
-    }
+    while(SDL_PollEvent(&eventBox)) {
+      switch(eventBox.type) {
+      case SDL_QUIT:
+        inputState.eventType = EventType::QUIT;
+        break;
+      case SDL_KEYUP:
+        inputState.eventType = EventType::KEY_UP;
+        UpdateKeyboardState(inputState.keyboardState, eventBox.key.keysym.sym, false);
+        break;
+      case SDL_KEYDOWN:
+        inputState.eventType = EventType::KEY_DOWN;
+        UpdateKeyboardState(inputState.keyboardState, eventBox.key.keysym.sym, true);
+        break;
+      default:
+        inputState.eventType = EventType::NONE;
+        break;
+      }
+    }        
 
     return inputState;
   }

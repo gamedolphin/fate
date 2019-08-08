@@ -1,6 +1,7 @@
 #include "fate/core.h"
 #include "fate/gamestate.h"
 #include "fate/log.h"
+#include "fate/time.h"
 
 namespace Fate {
 
@@ -11,12 +12,25 @@ namespace Fate {
 
   void Game::Run(GameState& state) {
     state.isRunning = true;
+
+    Time::Initialize(state.timeState);
+
     while(state.isRunning) {
-      state.inputState = Input::ReadInput(state.inputState);
+
+      Time::FrameStart(state.timeState);
+
+      Input::ReadInput(state.inputState);
+
       if(state.inputState.eventType == EventType::QUIT) {
         StopGame(state);
         break;
       }
+
+      while(Time::HasLag(state.timeState)) {
+        Time::Update(state.timeState);
+        // busy wait
+      }
+
       Scenes::Update(state);
       Renderer::Render(state.windowState, state.renderState, state.entityState);
     }
