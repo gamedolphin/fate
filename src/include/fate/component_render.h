@@ -1,35 +1,35 @@
 #pragma once
 #include <cstdint>
-#include <string>
 #include <entt/entt.hpp>
+#include <string>
 
 namespace bgfx {
-  struct TextureHandle;
-  struct ProgramHandle;
-}
+struct TextureHandle;
+struct ProgramHandle;
+}  // namespace bgfx
 
 namespace Fate {
 
-  enum class RenderType
-    {
-     NONE,
-     SPRITE
-    };
-
-  struct RenderComponent {
-    uint8_t vertexBufferId;
-    uint8_t indexBufferId;
-    std::shared_ptr<bgfx::ProgramHandle> programHandle;
-    RenderType type;
-  };
-
-  struct RenderSize {
-    float width;
-    float height;
-  };
-
-  struct Sprite {
-    std::shared_ptr<bgfx::TextureHandle> texture;
-    RenderSize size;
-  };
+struct RenderSize {
+  uint32_t width;
+  uint32_t height;
 };
+
+enum class RenderType { NONE, SPRITE };
+
+struct TextureResource {
+  std::shared_ptr<bgfx::TextureHandle> textureHandle;
+  RenderSize size;
+};
+
+struct RenderComponent {
+  uint8_t vertexBufferId;
+  uint8_t indexBufferId;
+  std::shared_ptr<bgfx::ProgramHandle> programHandle;
+  RenderType type;
+};
+
+struct Sprite {
+  TextureResource texture;
+};
+};  // namespace Fate
