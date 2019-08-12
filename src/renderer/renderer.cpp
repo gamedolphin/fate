@@ -18,17 +18,11 @@
 
 namespace Fate {
 
-void SetScale(float *mtx, float scaleX, float scaleY, float scaleZ) {
-  mtx[0] = scaleX;
-  mtx[5] = scaleY;
-  mtx[10] = scaleZ;
+void SetScale(float *mtx, Vector3 scale) {
+  mtx[0] = scale.x;
+  mtx[5] = scale.y;
+  mtx[10] = scale.y;
 };
-
-void AddScale(float *mtx, float scaleX, float scaleY, float scaleZ) {
-  mtx[0] *= scaleX;
-  mtx[5] *= scaleY;
-  mtx[10] *= scaleZ;
-}
 
 void SetMatrix(float *mtx, Vector3 position, Vector3 rotation, Vector3 scale) {
   bx::mtxRotateXYZ(mtx, rotation.x, rotation.y, rotation.z);
@@ -48,7 +42,7 @@ void SetMatrix(Transform &transform) {
   auto &position = transform.position;
   auto &scale = transform.scale;
   bx::mtxRotateXYZ(transform.mtx, rotation.x, rotation.y, rotation.z);
-  SetScale(transform.mtx, scale.x, scale.y, scale.z);
+  SetScale(transform.mtx, scale);
   transform.mtx[12] = position.x;
   transform.mtx[13] = position.y;
   transform.mtx[14] = position.z;
@@ -117,8 +111,6 @@ void Renderer::InitializeRenderer(WindowState &windowState,
   bgfx::renderFrame();
   bgfx::init(init);
 
-  LoadShaderProgram(renderState.shaderState, "shaders/cubes.vshader.bin",
-                    "shaders/cubes.fshader.bin", "cubes");
   LoadShaderProgram(renderState.shaderState, "shaders/sprite.vshader.bin",
                     "shaders/sprite.fshader.bin", "sprite");
 
@@ -149,12 +141,21 @@ void Renderer::InitializeRenderer(WindowState &windowState,
   }
 }
 
+void Renderer::UpdateTransforms(GameState &gameState) {
+  auto &registry = gameState.entityState.registry;
+  auto transforms = registry.view<Transform>();
+
+  for (auto transformEntity : transforms) {
+    auto &transform = transforms.get(transformEntity);
+    SetMatrix(transform);
+  }
+}
+
 void Renderer::Render(WindowState &windowState, RenderState &renderState,
                       EntityState &entityState) {
   auto cameras = entityState.registry.view<Transform, CameraComponent>();
   for (auto cameraEntity : cameras) {
     auto &cameraTransform = cameras.get<Transform>(cameraEntity);
-    SetMatrix(cameraTransform);
 
     auto &cameraInfo = cameras.get<CameraComponent>(cameraEntity);
     SetupCamera(cameraInfo, windowState);
@@ -180,11 +181,8 @@ void Renderer::Render(WindowState &windowState, RenderState &renderState,
             Vector3{transform.scale.x * sprite.texture.size.width,
                     transform.scale.y * sprite.texture.size.height, 1.0f};
 
-        if (transform.isDirty) {
-          SetMatrix(transform.mtx, transform.position, transform.rotation,
-                    scale);
-          transform.isDirty = true;
-        }
+        // scale according to sprite dimensions
+        SetScale(transform.mtx, scale);
 
         bgfx::setTransform(transform.mtx);
 

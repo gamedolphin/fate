@@ -5,42 +5,41 @@
 
 namespace Fate {
 
-  void Game::Initialize(GameState &state) {
-    Window::CreateWindow(state.windowState);
-    Renderer::InitializeRenderer(state.windowState, state.renderState, state.entityState);
-  }
+void Game::Initialize(GameState &state) {
+  Window::CreateWindow(state.windowState);
+  Renderer::InitializeRenderer(state.windowState, state.renderState,
+                               state.entityState);
+}
 
-  void Game::Run(GameState& state) {
-    state.isRunning = true;
+void Game::Run(GameState &state) {
+  state.isRunning = true;
 
-    Time::Initialize(state.timeState);
+  Time::Initialize(state.timeState);
 
-    while(state.isRunning) {
+  while (state.isRunning) {
+    Time::FrameStart(state.timeState);
 
-      Time::FrameStart(state.timeState);
+    Input::ReadInput(state.inputState);
 
-      Input::ReadInput(state.inputState);
-
-      if(state.inputState.eventType == EventType::QUIT) {
-        StopGame(state);
-        break;
-      }
-
-      while(state.timeState.lag >= state.timeState.timestep) {
-        state.timeState.lag -= state.timeState.timestep;
-        // busy wait
-      }
-
-      Scenes::Update(state);
-      Renderer::Render(state.windowState, state.renderState, state.entityState);
+    if (state.inputState.eventType == EventType::QUIT) {
+      StopGame(state);
+      break;
     }
 
-    Resources::UnloadAllResources(state);
-    Renderer::ShutdownRenderer(state.windowState, state.renderState);
-    Window::ShutdownWindow(state.windowState);
+    while (state.timeState.lag >= state.timeState.timestep) {
+      state.timeState.lag -= state.timeState.timestep;
+      // busy wait
+    }
+
+    Scenes::Update(state);
+    Renderer::UpdateTransforms(state);
+    Renderer::Render(state.windowState, state.renderState, state.entityState);
   }
 
-  void Game::StopGame(GameState &state) {
-    state.isRunning = false;
-  }
-};
+  Resources::UnloadAllResources(state);
+  Renderer::ShutdownRenderer(state.windowState, state.renderState);
+  Window::ShutdownWindow(state.windowState);
+}
+
+void Game::StopGame(GameState &state) { state.isRunning = false; }
+};  // namespace Fate
