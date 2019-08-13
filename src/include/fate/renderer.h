@@ -21,6 +21,7 @@ class Renderer {
                                  RenderState& renderState,
                                  EntityState& entityState);
   static void UpdateTransforms(GameState& gameState);
+  static void SetupCameras(GameState& gameState);
   static void Render(WindowState& windowState, RenderState& renderState,
                      EntityState& entityState);
   static void ShutdownRenderer(WindowState& windowState,

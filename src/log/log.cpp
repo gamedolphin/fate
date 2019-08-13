@@ -3,11 +3,8 @@
 
 namespace Fate {
 
-  void LogMessage(std::string msg) {
-     spdlog::info(msg);
-  }
+void LogMessage(const std::string& msg) { spdlog::info(msg); }
 
-  void LogError(std::string msg) {
-    spdlog::error(msg);
-  }
-};
+void LogError(const std::string& msg) { spdlog::error(msg); }
+
+};  // namespace Fate

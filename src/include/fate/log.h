@@ -3,6 +3,6 @@
 
 namespace Fate {
 
-  void LogMessage(std::string msg);
-  void LogError(std::string msg);
-}
+void LogMessage(const std::string& msg);
+void LogError(const std::string& msg);
+}  // namespace Fate

@@ -33,6 +33,7 @@ void Game::Run(GameState &state) {
 
     Scenes::Update(state);
     Renderer::UpdateTransforms(state);
+    Renderer::SetupCameras(state);
     Renderer::Render(state.windowState, state.renderState, state.entityState);
   }
 

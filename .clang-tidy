@@ -1,2 +1,2 @@
-Checks:           '*'
-WarningsAsErrors: '*'
+Checks:           '*,-fuchsia-default-arguments,-google-runtime-references,-google-build-using-namespace,-llvm-*,-hicpp-*'
+HeaderFilterRegex: '.*'

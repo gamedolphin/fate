@@ -2,11 +2,9 @@
 #include <fate/component_transform.h>
 #include <fate/log.h>
 
-using namespace Fate;
-
 namespace Pong {
 
-struct Player {};
+using namespace Fate;
 
 struct Paddle {
   float maxSpeed;
@@ -14,15 +12,43 @@ struct Paddle {
 };
 
 struct Collider {
-  uint32_t height;
-  uint32_t width;
+  float x, y;
+  float height;
+  float width;
+
+  static bool DoesIntersect(const Collider& c1, const Collider& c2) {
+    auto l1x = c1.x - c1.width / 2;
+    auto l1y = c1.y + c1.height / 2;
+    auto r1x = c1.x + c1.width / 2;
+    auto r1y = c1.y - c1.height / 2;
+
+    auto l2x = c2.x - c2.width / 2;
+    auto l2y = c2.y + c2.height / 2;
+    auto r2x = c2.x + c2.width / 2;
+    auto r2y = c2.y - c2.height / 2;
+
+    if (l1x > r2x || l2x > r1x) return false;
+
+    if (l1y < r2y || l2y < r1y) return false;
+
+    return true;
+  };
 };
 
 struct Velocity {
   float x, y;
 };
 
-entt::entity MakePaddle(Fate::GameState& state, Fate::Scene& scene) {
+struct Player {};
+struct Ball {};
+
+struct Active {};
+
+struct Game_Playing {};
+struct Game_Start {};
+
+entt::entity MakePaddle(Fate::GameState& state, Fate::Scene& scene,
+                        float posX) {
   auto& registry = state.entityState.registry;
   auto paddle = scene.CreateEntity(state);
   Fate::Renderer::MakeSprite(paddle, state, "paddle");
@@ -31,9 +57,14 @@ entt::entity MakePaddle(Fate::GameState& state, Fate::Scene& scene) {
 
   auto& pInfo = registry.assign<Paddle>(paddle);
   pInfo.maxSpeed = 10;
-  pInfo.height = (float)size.height;
+  pInfo.height = static_cast<float>(size.height);
+
+  auto& playerTransform = registry.get<Transform>(paddle);
+  SetTransformX(playerTransform, posX);
 
   auto& collider = registry.assign<Collider>(paddle);
+  collider.x = posX;
+  collider.y = 0;
   collider.height = size.height;
   collider.width = size.width;
 
@@ -43,68 +74,96 @@ entt::entity MakePaddle(Fate::GameState& state, Fate::Scene& scene) {
 
 void ProcessPaddles(GameState& state) {
   auto& registry = state.entityState.registry;
-  auto& window = state.windowState;
-  auto view = registry.view<Velocity, Transform, Paddle>();
-
-  for (auto& entity : view) {
-    auto& paddle = registry.get<Paddle>(entity);
-    auto& velocity = registry.get<Velocity>(entity);
-    auto& transform = registry.get<Transform>(entity);
-
-    auto& position = transform.position;
-    if (velocity.y < 0 &&
-        position.y <= -window.height / 2 + paddle.height / 2) {
-      velocity.y = 0;
-    } else if (velocity.y > 0 &&
-               position.y >= window.height / 2 - paddle.height / 2) {
-      velocity.y = 0;
-    }
-  }
+  const auto& window = state.windowState;
+  registry.view<Velocity, const Transform, const Paddle>().each(
+      [window](Velocity& velocity, const Transform& transform,
+               const Paddle& paddle) {
+        auto& position = transform.position;
+        if (velocity.y < 0 &&
+            position.y <=
+                -static_cast<float>(window.height) / 2 + paddle.height / 2) {
+          velocity.y = 0;
+        } else if (velocity.y > 0 &&
+                   position.y >= static_cast<float>(window.height) / 2 -
+                                     paddle.height / 2) {
+          velocity.y = 0;
+        }
+      });
 }
 
-void ProcessInput(GameState& state, entt::entity& playerPaddle) {
-  auto& paddle = state.entityState.registry.get<Paddle>(playerPaddle);
-  auto& velocity = state.entityState.registry.get<Velocity>(playerPaddle);
-  if (Fate::Input::IsKeyPressed(state.inputState.keyboardState,
-                                Fate::KeyCode::W)) {
-    velocity.y = paddle.maxSpeed;
-  } else if (Fate::Input::IsKeyPressed(state.inputState.keyboardState,
-                                       Fate::KeyCode::S)) {
-    velocity.y = -paddle.maxSpeed;
-  } else {
-    velocity.y = 0;
-  }
-}
-
-void ProcessBall(GameState& state, entt::entity ball) {
+void ProcessInput(GameState& state) {
   auto& registry = state.entityState.registry;
-  auto& ballCollider = registry.get<Collider>(ball);
-  auto& ballTransform = registry.get<Transform>(ball);
+  const auto& keyboardState = state.inputState.keyboardState;
+  registry.view<Velocity, const Paddle, const Player>().each(
+      [keyboardState](Velocity& velocity, const Paddle paddle,
+                      const Player player) {
+        if (Fate::Input::IsKeyPressed(keyboardState, Fate::KeyCode::W)) {
+          velocity.y = paddle.maxSpeed;
+        } else if (Fate::Input::IsKeyPressed(keyboardState, Fate::KeyCode::S)) {
+          velocity.y = -paddle.maxSpeed;
+        } else {
+          velocity.y = 0;
+        }
+      });
+}
 
-  auto paddles = registry.view<Paddle, Transform, Collider>();
+void ProcessBall(GameState& state) {
+  auto& registry = state.entityState.registry;
+  registry.view<const Ball, const Collider, const Transform, Velocity>().each(
+      [&registry](const auto& ball, const auto& active,
+                  const auto& ballCollider, const auto& ballTransform,
+                  auto& ballVelocity) {
+        registry.view<const Paddle, const Transform, const Collider>().each(
+            [ballCollider, &ballVelocity](const auto& paddle,
+                                          const auto& paddleTransform,
+                                          const auto& paddleCollider) {
+              bool doesIntersect =
+                  Collider::DoesIntersect(ballCollider, paddleCollider);
 
-  for (auto& paddle : paddles) {
-    auto& paddleTransform = registry.get<Transform>(paddle);
-    auto& paddleCollider = registry.get<Collider>(paddle);
-  }
+              if (doesIntersect == true) {
+                ballVelocity.x *= -1;
+              }
+            });
+      });
+}
+
+void UpdateColliders(GameState& state) {
+  auto& registry = state.entityState.registry;
+  registry.view<const Transform, Collider>().each(
+      [](const Transform& transform, Collider& collider) {
+        collider.x = transform.position.x;
+        collider.y = transform.position.y;
+      });
 }
 
 void UpdatePositions(GameState& state) {
-  float deltaTime = Time::GetDeltaTime(state);
+  const float deltaTime = Time::GetDeltaTime(state);
   auto& registry = state.entityState.registry;
-  auto view = registry.view<Velocity, Transform>();
-
-  for (auto& entity : view) {
-    auto& transform = registry.get<Transform>(entity);
-    auto& velocity = registry.get<Velocity>(entity);
-
-    transform =
-        SetTransformXY(transform, transform.position.x + velocity.x * deltaTime,
-                       transform.position.y + velocity.y);
-  }
+  registry.view<const Velocity, Transform>().each(
+      [deltaTime](const Velocity& velocity, Transform& transform) {
+        transform = SetTransformXY(
+            transform, transform.position.x + velocity.x * deltaTime,
+            transform.position.y + velocity.y);
+      });
 }
 
-GameScene::GameScene(GameState& state) {
+void ListenForSpace(GameState& state) {
+  auto& registry = state.entityState.registry;
+
+  registry.view<Game_Start>().each(
+      [&state, &registry](entt::entity entity, const auto& start) {
+        if (Fate::Input::IsKeyPressed(state.inputState.keyboardState,
+                                      Fate::KeyCode::SPACE)) {
+          state.entityState.registry.view<const Ball, Velocity>().each(
+              [](const auto& ball, auto& velocity) { velocity.x = 1000; });
+
+          registry.remove<Game_Start>(entity);
+          registry.assign<Game_Playing>(entity);
+        }
+      });
+}
+
+GameScene::GameScene() {
   sceneConfig.OnInitialize = [this](Fate::GameState& state,
                                     Fate::Scene& scene) {
     Fate::LogMessage("Initializing pong");
@@ -116,33 +175,41 @@ GameScene::GameScene(GameState& state) {
 
     auto& registry = state.entityState.registry;
 
-    playerPaddle = MakePaddle(state, scene);
+    auto playerPosX = static_cast<float>(state.windowState.width) / 2 -
+                      static_cast<float>(paddleSize.width) / 2;
+    auto playerPaddle = MakePaddle(state, scene, playerPosX);
     registry.assign<Player>(playerPaddle);
-    auto& playerTransform = registry.get<Transform>(playerPaddle);
-    SetTransformX(playerTransform,
-                  state.windowState.width / 2 - (float)paddleSize.width / 2);
 
-    auto computerPaddle = MakePaddle(state, scene);
-    auto& computerTransform = registry.get<Transform>(computerPaddle);
-    SetTransformX(computerTransform,
-                  -state.windowState.width / 2 + (float)paddleSize.width / 2);
+    auto compPosX = -static_cast<float>(state.windowState.width) / 2 +
+                    static_cast<float>(paddleSize.width) / 2;
+    auto computerPaddle = MakePaddle(state, scene, compPosX);
 
-    ball = scene.CreateEntity(state);
+    auto ball = scene.CreateEntity(state);
     Fate::Renderer::MakeSprite(ball, state, "ball");
-
     auto ballSize = Fate::Resources::GetTextureSize(state, "paddle");
     auto& collider = registry.assign<Collider>(ball);
+    collider.x = 0;
+    collider.y = 0;
     collider.height = ballSize.height;
     collider.width = ballSize.width;
-
     registry.assign<Velocity>(ball);
+    registry.assign<Ball>(ball);
+
+    auto gameConfig = scene.CreateEntity(state);
+    registry.assign<Game_Start>(gameConfig);
   };
 
   sceneConfig.OnUpdate = [this](Fate::GameState& state, Fate::Scene& scene) {
-    ProcessInput(state, playerPaddle);
-    ProcessPaddles(state);
-    ProcessBall(state, ball);
-    UpdatePositions(state);
+    state.entityState.registry.view<Game_Playing>().each(
+        [&state](const auto& config) {
+          ProcessInput(state);
+          ProcessPaddles(state);
+          ProcessBall(state);
+          UpdatePositions(state);
+          UpdateColliders(state);
+        });
+
+    ListenForSpace(state);
   };
 }
 

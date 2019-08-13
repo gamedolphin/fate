@@ -24,3 +24,6 @@ add_subdirectory(core)
 add_library(fate SHARED fate.cpp)
 target_link_libraries(fate PUBLIC log window input renderer resource core)
 target_include_directories(fate PUBLIC include)
+set_target_properties(fate
+  PROPERTIES
+  CXX_CLANG_TIDY "clang-tidy")

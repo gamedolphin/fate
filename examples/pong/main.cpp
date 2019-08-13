@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
 
   Fate::Game::Initialize(gameState);
 
-  auto gameScene = Pong::GameScene(gameState);
+  auto gameScene = Pong::GameScene();
 
   auto sceneId = Fate::Scenes::AddScene(gameState, gameScene.sceneConfig, 0);
   Fate::Scenes::SetScene(gameState, sceneId);

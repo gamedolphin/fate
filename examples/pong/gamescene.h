@@ -4,12 +4,9 @@
 namespace Pong {
 
 class GameScene {
-  entt::entity playerPaddle;
-  entt::entity ball;
-
  public:
   Fate::SceneConfig sceneConfig;
-  GameScene(Fate::GameState& gameState);
+  GameScene();
 };
 
 };  // namespace Pong

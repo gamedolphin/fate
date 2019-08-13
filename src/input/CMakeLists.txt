@@ -7,3 +7,6 @@ add_library(input SHARED ../include/fate/input.h input.cpp)
 target_include_directories(input PUBLIC ../include)
 target_include_directories(input PRIVATE ${SDL2_INCLUDE_DIRS})
 target_link_libraries(input PRIVATE ${SDL2_LIBRARIES})
+set_target_properties(input
+  PROPERTIES
+  CXX_CLANG_TIDY "clang-tidy")

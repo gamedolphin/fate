@@ -143,61 +143,64 @@ void Renderer::InitializeRenderer(WindowState &windowState,
 
 void Renderer::UpdateTransforms(GameState &gameState) {
   auto &registry = gameState.entityState.registry;
-  auto transforms = registry.view<Transform>();
+  registry.view<Transform>().each(
+      [](Transform &transform) { SetMatrix(transform); });
 
-  for (auto transformEntity : transforms) {
-    auto &transform = transforms.get(transformEntity);
-    SetMatrix(transform);
-  }
+  // sprite transforms
+  registry.view<Transform, Sprite>().each([](Transform &transform,
+                                             Sprite &sprite) {
+    auto scale = Vector3{transform.scale.x * sprite.texture.size.width,
+                         transform.scale.y * sprite.texture.size.height, 1.0f};
+
+    // scale according to sprite dimensions
+    SetScale(transform.mtx, scale);
+  });
+}
+
+void Renderer::SetupCameras(GameState &gameState) {
+  auto &windowState = gameState.windowState;
+  gameState.entityState.registry.view<CameraComponent>().each(
+      [&windowState](CameraComponent &cameraComponent) {
+        SetupCamera(cameraComponent, windowState);
+      });
 }
 
 void Renderer::Render(WindowState &windowState, RenderState &renderState,
                       EntityState &entityState) {
-  auto cameras = entityState.registry.view<Transform, CameraComponent>();
-  for (auto cameraEntity : cameras) {
-    auto &cameraTransform = cameras.get<Transform>(cameraEntity);
+  entityState.registry.view<Transform, CameraComponent>().each(
+      [&windowState, &entityState, &renderState](Transform &cameraTransform,
+                                                 CameraComponent &cameraInfo) {
+        bgfx::setViewTransform(cameraInfo.viewId, cameraTransform.mtx,
+                               cameraInfo.projectionMatrix);
 
-    auto &cameraInfo = cameras.get<CameraComponent>(cameraEntity);
-    SetupCamera(cameraInfo, windowState);
+        auto &cameraRect = cameraInfo.viewPort;
+        bgfx::setViewRect(cameraInfo.viewId, cameraRect.x, cameraRect.y,
+                          cameraRect.width * windowState.width,
+                          cameraRect.height * windowState.height);
 
-    bgfx::setViewTransform(cameraInfo.viewId, cameraTransform.mtx,
-                           cameraInfo.projectionMatrix);
+        bgfx::touch(cameraInfo.viewId);
 
-    auto &cameraRect = cameraInfo.viewPort;
-    bgfx::setViewRect(cameraInfo.viewId, cameraRect.x, cameraRect.y,
-                      cameraRect.width * windowState.width,
-                      cameraRect.height * windowState.height);
+        {  // render sprites
 
-    bgfx::touch(cameraInfo.viewId);
+          entityState.registry.view<Transform, Sprite>().each(
+              [&renderState, &cameraInfo](Transform &transform,
+                                          Sprite &sprite) {
+                bgfx::setTransform(transform.mtx);
 
-    {  // render sprites
-
-      auto renderables = entityState.registry.view<Transform, Sprite>();
-      for (auto renderable : renderables) {
-        auto &sprite = renderables.get<Sprite>(renderable);
-        auto &transform = renderables.get<Transform>(renderable);
-
-        auto scale =
-            Vector3{transform.scale.x * sprite.texture.size.width,
-                    transform.scale.y * sprite.texture.size.height, 1.0f};
-
-        // scale according to sprite dimensions
-        SetScale(transform.mtx, scale);
-
-        bgfx::setTransform(transform.mtx);
-
-        bgfx::setVertexBuffer(cameraInfo.viewId,
-                              *renderState.spriteConstants.vertexBufferHandle);
-        bgfx::setIndexBuffer(*renderState.spriteConstants.indexBufferHandle);
-        bgfx::setTexture(0, *renderState.spriteConstants.textureUniform,
-                         *sprite.texture.textureHandle);
-        bgfx::setState(BGFX_STATE_DEFAULT);
-        bgfx::submit(cameraInfo.viewId,
-                     *renderState.spriteConstants.programHandle);
-      }
-    }
-    bgfx::frame();
-  }
+                bgfx::setVertexBuffer(
+                    cameraInfo.viewId,
+                    *renderState.spriteConstants.vertexBufferHandle);
+                bgfx::setIndexBuffer(
+                    *renderState.spriteConstants.indexBufferHandle);
+                bgfx::setTexture(0, *renderState.spriteConstants.textureUniform,
+                                 *sprite.texture.textureHandle);
+                bgfx::setState(BGFX_STATE_DEFAULT);
+                bgfx::submit(cameraInfo.viewId,
+                             *renderState.spriteConstants.programHandle);
+              });
+        }
+        bgfx::frame();
+      });
 }
 
 void Renderer::ShutdownRenderer(WindowState &windowState,
