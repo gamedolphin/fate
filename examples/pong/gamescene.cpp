@@ -1,6 +1,7 @@
 #include "gamescene.h"
 #include <fate/component_transform.h>
 #include <fate/log.h>
+#include <fate/random.h>
 
 namespace Pong {
 
@@ -39,6 +40,7 @@ struct Velocity {
   float x, y;
 };
 
+struct Computer {};
 struct Player {};
 struct Ball {};
 
@@ -56,7 +58,7 @@ entt::entity MakePaddle(Fate::GameState& state, Fate::Scene& scene,
   auto size = Fate::Resources::GetTextureSize(state, "paddle");
 
   auto& pInfo = registry.assign<Paddle>(paddle);
-  pInfo.maxSpeed = 10;
+  pInfo.maxSpeed = 1000;
   pInfo.height = static_cast<float>(size.height);
 
   auto& playerTransform = registry.get<Transform>(paddle);
@@ -107,12 +109,32 @@ void ProcessInput(GameState& state) {
       });
 }
 
+void Reset(entt::registry& registry) {
+  registry.view<const Game_Playing>().each(
+      [&](auto entity, const Game_Playing& playing) {
+        registry.remove<Game_Playing>(entity);
+        registry.assign<Game_Start>(entity);
+        registry.view<const Ball, Transform, Velocity>().each(
+            [](const auto& ball, auto& transform, auto& velocity) {
+              transform.position = Vector3{0, 0, 0};
+              velocity = Velocity{0, 0};
+            });
+
+        registry.view<const Paddle, Transform, Velocity>().each(
+            [](const auto& paddle, auto& transform, auto& velocity) {
+              transform.position = Vector3{transform.position.x, 0, 0};
+              velocity = Velocity{0, 0};
+            });
+      });
+};
+
 void ProcessBall(GameState& state) {
   auto& registry = state.entityState.registry;
+  auto& windowState = state.windowState;
   registry.view<const Ball, const Collider, const Transform, Velocity>().each(
-      [&registry](const auto& ball, const auto& active,
-                  const auto& ballCollider, const auto& ballTransform,
-                  auto& ballVelocity) {
+      [&registry, windowState](const auto& ball, const auto& active,
+                               const auto& ballCollider,
+                               const auto& ballTransform, auto& ballVelocity) {
         registry.view<const Paddle, const Transform, const Collider>().each(
             [ballCollider, &ballVelocity](const auto& paddle,
                                           const auto& paddleTransform,
@@ -121,9 +143,30 @@ void ProcessBall(GameState& state) {
                   Collider::DoesIntersect(ballCollider, paddleCollider);
 
               if (doesIntersect == true) {
+                float distance = std::abs(paddleCollider.x - ballCollider.x);
                 ballVelocity.x *= -1;
+                auto positive = ballVelocity.y > 0;
+                ballVelocity.y =
+                    (300 + (distance / paddleCollider.width) * 100) *
+                    (positive ? 1 : -1);
               }
             });
+
+        if (ballCollider.x + ballCollider.width > windowState.width / 2) {
+          // dont reflect here
+          Reset(registry);
+        } else if (ballCollider.x - ballCollider.width <
+                   -(float)windowState.width / 2) {
+          Reset(registry);
+        }
+
+        if (ballCollider.y + ballCollider.height / 2 > windowState.height / 2) {
+          // dont reflect here
+          ballVelocity.y *= -1;
+        } else if (ballCollider.y - ballCollider.height / 2 <
+                   -(float)windowState.height / 2) {
+          ballVelocity.y *= -1;
+        }
       });
 }
 
@@ -143,7 +186,18 @@ void UpdatePositions(GameState& state) {
       [deltaTime](const Velocity& velocity, Transform& transform) {
         transform = SetTransformXY(
             transform, transform.position.x + velocity.x * deltaTime,
-            transform.position.y + velocity.y);
+            transform.position.y + velocity.y * deltaTime);
+      });
+}
+
+void ProcessAI(GameState& state) {
+  auto& registry = state.entityState.registry;
+  registry.view<const Computer, Transform>().each(
+      [&registry](const auto& computer, auto& transform) {
+        registry.view<const Ball, const Transform>().each(
+            [&transform](const auto& ball, const auto& ballTransform) {
+              transform.position.y = ballTransform.position.y;
+            });
       });
 }
 
@@ -155,7 +209,13 @@ void ListenForSpace(GameState& state) {
         if (Fate::Input::IsKeyPressed(state.inputState.keyboardState,
                                       Fate::KeyCode::SPACE)) {
           state.entityState.registry.view<const Ball, Velocity>().each(
-              [](const auto& ball, auto& velocity) { velocity.x = 1000; });
+              [](const auto& ball, auto& velocity) {
+                LogMessage("STARTING BALL");
+                auto min = Random::get(400, 500);
+                auto minY = Random::get(300, 400);
+                velocity.x = Random::get(0, 1) > 0.5f ? -min : min;
+                velocity.y = Random::get(0, 1) > 0.5f ? -minY : minY;
+              });
 
           registry.remove<Game_Start>(entity);
           registry.assign<Game_Playing>(entity);
@@ -183,6 +243,7 @@ GameScene::GameScene() {
     auto compPosX = -static_cast<float>(state.windowState.width) / 2 +
                     static_cast<float>(paddleSize.width) / 2;
     auto computerPaddle = MakePaddle(state, scene, compPosX);
+    registry.assign<Computer>(computerPaddle);
 
     auto ball = scene.CreateEntity(state);
     Fate::Renderer::MakeSprite(ball, state, "ball");
@@ -205,6 +266,7 @@ GameScene::GameScene() {
           ProcessInput(state);
           ProcessPaddles(state);
           ProcessBall(state);
+          ProcessAI(state);
           UpdatePositions(state);
           UpdateColliders(state);
         });

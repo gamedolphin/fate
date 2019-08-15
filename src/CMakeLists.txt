@@ -7,6 +7,9 @@ set( BGFX_AMALGAMATED ON )
 set( BX_AMALGAMATED ON )
 add_subdirectory(libs/bgfx.cmake)
 
+if(NOT TARGET math)
+  add_subdirectory(math)
+endif()
 add_subdirectory(log)
 if(NOT TARGET window)
   add_subdirectory(window)
@@ -22,7 +25,7 @@ add_subdirectory(input)
 add_subdirectory(core)
 
 add_library(fate SHARED fate.cpp)
-target_link_libraries(fate PUBLIC log window input renderer resource core)
+target_link_libraries(fate PUBLIC log window input renderer resource math core)
 target_include_directories(fate PUBLIC include)
 set_target_properties(fate
   PROPERTIES
