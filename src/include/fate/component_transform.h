@@ -9,6 +9,9 @@ struct Transform {
   Vector3 scale = {1, 1, 1};
 
   bool isDirty = true;
+};
+
+struct TransformMatrix {
   float mtx[16];
 };
 

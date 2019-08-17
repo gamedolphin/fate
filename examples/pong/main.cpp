@@ -8,8 +8,6 @@ int main(int argc, char** argv) {
   gameState.windowState = {
       .windowTitle = "Pong Game", .width = 800, .height = 600};
 
-  Fate::Game::Initialize(gameState);
-
   auto gameScene = Pong::GameScene();
 
   auto sceneId = Fate::Scenes::AddScene(gameState, gameScene.sceneConfig, 0);

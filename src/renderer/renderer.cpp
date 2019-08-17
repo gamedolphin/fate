@@ -7,6 +7,7 @@
 #include <cmath>
 #include <entt/entt.hpp>
 #include <fstream>
+#include <thread>  // std::thread
 #include "fate/component_camera.h"
 #include "fate/component_render.h"
 #include "fate/component_transform.h"
@@ -17,6 +18,9 @@
 #include "fate/sprite.h"
 
 namespace Fate {
+
+using namespace std::chrono_literals;
+typedef std::chrono::duration<float, std::milli> fsec;
 
 void SetScale(float *mtx, Vector3 scale) {
   mtx[0] = scale.x;
@@ -34,19 +38,18 @@ void SetMatrix(float *mtx, Vector3 position, Vector3 rotation, Vector3 scale) {
   mtx[14] = position.z;
 }
 
-void SetMatrix(Transform &transform) {
+void SetMatrix(float *mtx, const Transform &transform) {
   if (transform.isDirty == false) {
     return;
   }
   auto &rotation = transform.rotation;
   auto &position = transform.position;
   auto &scale = transform.scale;
-  bx::mtxRotateXYZ(transform.mtx, rotation.x, rotation.y, rotation.z);
-  SetScale(transform.mtx, scale);
-  transform.mtx[12] = position.x;
-  transform.mtx[13] = position.y;
-  transform.mtx[14] = position.z;
-  transform.isDirty = false;
+  bx::mtxRotateXYZ(mtx, rotation.x, rotation.y, rotation.z);
+  SetScale(mtx, scale);
+  mtx[12] = position.x;
+  mtx[13] = position.y;
+  mtx[14] = position.z;
 };
 
 void CreateDefaultCamera(WindowState &windowState, entt::registry &registry) {
@@ -97,6 +100,10 @@ void Renderer::InitializeRenderer(WindowState &windowState,
                                   EntityState &entityState) {
   LogMessage("Initializing renderer...");
 
+  // automatically create a transform matrix whenever a transform is created
+  entt::connect<Transform, TransformMatrix>(
+      entityState.registry.on_construct<Transform>());
+
   bgfx::PlatformData pd;
   pd.ndt = GetDisplayType(windowState);
   pd.nwh = GetWindowHandle(windowState);
@@ -139,22 +146,29 @@ void Renderer::InitializeRenderer(WindowState &windowState,
 
     bgfx::touch(cameraInfo.viewId);
   }
+
+  renderState.rendererInitialized = true;
 }
 
 void Renderer::UpdateTransforms(GameState &gameState) {
   auto &registry = gameState.entityState.registry;
-  registry.view<Transform>().each(
-      [](Transform &transform) { SetMatrix(transform); });
+  registry.view<TransformMatrix, Transform>().each(
+      [](TransformMatrix &transformMatrix, Transform &transform) {
+        SetMatrix(transformMatrix.mtx, transform);
+        transform.isDirty = false;
+      });
 
   // sprite transforms
-  registry.view<Transform, Sprite>().each([](Transform &transform,
-                                             Sprite &sprite) {
-    auto scale = Vector3{transform.scale.x * sprite.texture.size.width,
-                         transform.scale.y * sprite.texture.size.height, 1.0f};
+  registry.view<TransformMatrix, const Transform, const Sprite>().each(
+      [](TransformMatrix &transformMatrix, const Transform &transform,
+         const Sprite &sprite) {
+        auto scale =
+            Vector3{transform.scale.x * sprite.texture.size.width,
+                    transform.scale.y * sprite.texture.size.height, 1.0f};
 
-    // scale according to sprite dimensions
-    SetScale(transform.mtx, scale);
-  });
+        // scale according to sprite dimensions
+        SetScale(transformMatrix.mtx, scale);
+      });
 }
 
 void Renderer::SetupCameras(GameState &gameState) {
@@ -165,11 +179,54 @@ void Renderer::SetupCameras(GameState &gameState) {
       });
 }
 
-void Renderer::Render(WindowState &windowState, RenderState &renderState,
-                      EntityState &entityState) {
-  entityState.registry.view<Transform, CameraComponent>().each(
-      [&windowState, &entityState, &renderState](Transform &cameraTransform,
-                                                 CameraComponent &cameraInfo) {
+void ShutdownBGFX(RenderState &renderState) {
+  DestroySpriteRenderProperties(renderState.spriteConstants);
+  bgfx::shutdown();
+}
+
+void Renderer::StartRenderer(GameState &gameState) {
+  auto renderLoop = [&gameState]() {
+    using clock = std::chrono::high_resolution_clock;
+    auto timestep = std::chrono::nanoseconds(16ms);
+    auto startTime = clock::now();
+    auto frameTimeStart = clock::now();
+    std::chrono::nanoseconds lag = std::chrono::nanoseconds(0ns);
+    Renderer::InitializeRenderer(gameState.windowState, gameState.renderState,
+                                 gameState.entityState);
+
+    while (gameState.isRunning) {
+      auto frameTime = clock::now();
+      auto deltaTime = frameTime - frameTimeStart;
+      frameTimeStart = frameTime;
+      lag += std::chrono::duration_cast<std::chrono::nanoseconds>(deltaTime);
+
+      while (lag >= timestep) {
+        lag -= timestep;
+        // busy wait
+      }
+      Renderer::UpdateTransforms(gameState);
+      Renderer::SetupCameras(gameState);
+      Renderer::Render(gameState);
+    }
+    ShutdownBGFX(gameState.renderState);
+  };
+
+  gameState.renderState.renderThread = std::thread(renderLoop);
+
+  while (gameState.renderState.rendererInitialized == false) {
+    std::this_thread::yield();
+  }
+}
+
+void Renderer::Render(GameState &gameState) {
+  WindowState &windowState = gameState.windowState;
+  RenderState &renderState = gameState.renderState;
+  EntityState &entityState = gameState.entityState;
+
+  entityState.registry.view<const TransformMatrix, const CameraComponent>()
+      .each([&windowState, &entityState, &renderState](
+                const TransformMatrix &cameraTransform,
+                const CameraComponent &cameraInfo) {
         bgfx::setViewTransform(cameraInfo.viewId, cameraTransform.mtx,
                                cameraInfo.projectionMatrix);
 
@@ -182,9 +239,9 @@ void Renderer::Render(WindowState &windowState, RenderState &renderState,
 
         {  // render sprites
 
-          entityState.registry.view<Transform, Sprite>().each(
-              [&renderState, &cameraInfo](Transform &transform,
-                                          Sprite &sprite) {
+          entityState.registry.view<const TransformMatrix, const Sprite>().each(
+              [&renderState, &cameraInfo](const TransformMatrix &transform,
+                                          const Sprite &sprite) {
                 bgfx::setTransform(transform.mtx);
 
                 bgfx::setVertexBuffer(
@@ -203,10 +260,8 @@ void Renderer::Render(WindowState &windowState, RenderState &renderState,
       });
 }
 
-void Renderer::ShutdownRenderer(WindowState &windowState,
-                                RenderState &renderState) {
+void Renderer::ShutdownRenderer(GameState &gameState) {
   LogMessage("Shutting down renderer");
-  DestroySpriteRenderProperties(renderState.spriteConstants);
-  bgfx::shutdown();
+  gameState.renderState.renderThread.join();
 }
 };  // namespace Fate

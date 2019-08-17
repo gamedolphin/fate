@@ -5,16 +5,13 @@
 
 namespace Fate {
 
-void Game::Initialize(GameState &state) {
-  Window::CreateWindow(state.windowState);
-  Renderer::InitializeRenderer(state.windowState, state.renderState,
-                               state.entityState);
-}
-
 void Game::Run(GameState &state) {
   state.isRunning = true;
 
+  Window::CreateWindow(state.windowState);
   Time::Initialize(state.timeState);
+
+  Renderer::StartRenderer(state);
 
   while (state.isRunning) {
     Time::FrameStart(state.timeState);
@@ -32,13 +29,10 @@ void Game::Run(GameState &state) {
     }
 
     Scenes::Update(state);
-    Renderer::UpdateTransforms(state);
-    Renderer::SetupCameras(state);
-    Renderer::Render(state.windowState, state.renderState, state.entityState);
   }
 
   Resources::UnloadAllResources(state);
-  Renderer::ShutdownRenderer(state.windowState, state.renderState);
+  Renderer::ShutdownRenderer(state);
   Window::ShutdownWindow(state.windowState);
 }
 

@@ -13,14 +13,10 @@ int main(int argc, char** argv) {
   gameState.windowState = {
       .windowTitle = "Movement Test", .width = 800, .height = 600};
 
-  Fate::Game::Initialize(gameState);
-
-  Fate::Resources::LoadTexture(gameState, "textures/FATE.png", "Fate");
-
   Fate::SceneConfig sceneConfig;
   sceneConfig.OnInitialize = [](Fate::GameState& state, Fate::Scene& scene) {
     Fate::LogMessage("Initializing game");
-
+    Fate::Resources::LoadTexture(state, "textures/FATE.png", "Fate");
     auto entity = scene.CreateEntity(state);
     Fate::Renderer::MakeSprite(entity, state, "Fate");
     state.entityState.registry.assign<FateLogo>(entity);
